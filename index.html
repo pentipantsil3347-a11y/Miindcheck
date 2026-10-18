@@ -1595,6 +1595,26 @@ button.dg-badge{cursor:pointer}
 .fc-btn.fc-nav-next{background:var(--purple);border-color:var(--purple);color:#fff}
 .fc-btn.fc-nav:disabled{opacity:.4;cursor:default}
 
+/* drug guide: standard dosing tiles, calculator and dose reference */
+.dg-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 10px}
+.dg-tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;min-width:0}
+.dg-tile-l{font-size:.62rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+.dg-tile-v{font-size:.82rem;line-height:1.5;color:var(--text);font-weight:600;overflow-wrap:anywhere}
+.dg-ktnote{background:var(--surface3);border-radius:10px;padding:9px 12px;margin:0 0 10px}
+.dg-std{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:.78rem;line-height:1.65;color:var(--muted2);margin-bottom:10px}
+.dg-std b{color:var(--text)}
+.dg-std span{font-size:.74rem}
+.dg-dr{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:11px 12px;margin-bottom:8px}
+.dg-dr-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.dg-dr-h b{font-size:.86rem;font-family:'Plus Jakarta Sans',sans-serif}
+.dg-dr-h small{font-size:.68rem;color:var(--muted)}
+.dg-dr-g{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin:8px 0}
+.dg-dr-g div{font-size:.76rem;line-height:1.45;color:var(--text);min-width:0;overflow-wrap:anywhere}
+.dg-dr-g span{display:block;font-size:.58rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.dg-dr-b{display:flex;gap:8px;flex-wrap:wrap}
+.dg-btn-s{border:1.5px solid var(--border2);background:var(--surface);color:var(--text);padding:7px 11px;border-radius:9px;font-weight:700;font-size:.72rem;cursor:pointer;font-family:'Inter',sans-serif}
+.dg-pk td:first-child{white-space:nowrap}
+
 /* long condition names (e.g. "Depersonalization/Derealization Disorder") must wrap on narrow phones */
 .tool-hero-info{min-width:0;}
 .tool-hero-name,.tool-hero-tagline,.tool-hero-abbr{overflow-wrap:anywhere;}
@@ -26155,6 +26175,838 @@ function dgListOnly(){
   const el = document.getElementById('dgList');
   if(el) el.innerHTML = list.length ? list.map(id=>`<button class="dg-item" onclick="mcOpenDrug('${id}')"><span style="font-size:20px">💊</span><span style="min-width:0;flex:1"><b>${cxEsc(DRUGS[id].n)}</b>${DRUGS[id].px&&DRUGS[id].px.trade?' <span class="dg-item-br">('+cxEsc(DRUGS[id].px.trade)+')</span>':''}<small>${cxEsc(DRUGS[id].cl)}</small></span>${dgBoxed(id)?'<span class="dg-mini bbw" title="Boxed warning">BBW</span>':''}${DRUGS[id].px&&DRUGS[id].px.high?'<span class="dg-mini high" title="High-alert medication">HA</span>':''}</button>`).join('') : '<div class="dg-p">No drugs match.</div>';
 }
+/* ═══ Standardised dosing for every drug in the guide ═══
+   a  usual adult daily dose      f  usual number of doses per day      m  maximum daily dose (text)
+   n  numeric adult maximum/day   np numeric maximum/day for a child    u  unit of the numbers (default mg)
+   k  weight-based range [low|null, high, maxPerKg|null, unit]          kt weight-based or paediatric detail
+   Values follow the app's own dose text (BNF, Maudsley, FDA labels). Verify against your local protocol. */
+const DG_DOSE = {};
+function dgDoseRec(id,a,f,m,n,k,kt,np,u){ DG_DOSE[id]={a:a,f:f,m:m,n:(n==null?null:n),np:(np==null?null:np),u:u||'mg',k:k||null,kt:kt||''}; }
+
+/* ── antipsychotics ── */
+dgDoseRec('haloperidol','3–15 mg/day for psychosis (0.5–5 mg two to three times a day)','2–3 (once daily at night is possible)','20 mg/day, oral and IM combined. Older US labelling cites higher doses, with little added benefit',20,[0.025,0.05,0.05],'Child (Tourette, specialist use): start 0.25–0.5 mg/day, up to 0.05 mg/kg/day. Decanoate depot: first dose up to 100 mg IM, then monthly; the monthly dose is about 10–15 times the stable daily oral dose (maximum 300 mg).');
+dgDoseRec('chlorpromazine','300–800 mg/day for psychosis','2–4 (larger dose at night)','1,000 mg/day oral; 400 mg/day IM',1000,[1,2,null],'Child 1–5 y: 0.5 mg/kg every 4–6 h (max 40 mg/day). 6–11 y: max 75 mg/day. Specialist use only.',75);
+dgDoseRec('fluphenazine_dec','12.5–100 mg per injection; usual 25 mg every 2–4 weeks','Not daily: one deep IM injection every 2–5 weeks','100 mg per injection (no more than 2 mL per site)',null,null,'Depot injection: not weight-based and not used in children.');
+dgDoseRec('risperidone','4–6 mg/day for schizophrenia','1–2','16 mg/day (doses above 8 mg rarely add benefit)',16,null,'Child autism irritability (5–17 y, specialist): under 20 kg start 0.25 mg/day, target 0.5 mg/day; 20 kg or more start 0.5 mg/day, target 1 mg/day. Dosing is by weight band, not mg/kg.');
+dgDoseRec('olanzapine','10–20 mg/day','1 (at night)','20 mg/day, oral and IM combined',20,null,'Not weight-based. Adolescents (13–17 y, specialist): start 2.5–5 mg, target 10 mg.');
+dgDoseRec('quetiapine','300–450 mg/day for schizophrenia','2 (immediate-release) or 1 (XR)','750–800 mg/day',800,null,'Not weight-based. Adolescent doses are fixed (specialist).');
+dgDoseRec('aripiprazole','10–30 mg/day','1','30 mg/day',30,null,'Child ≥6 y: start 2 mg, usual 5–20 mg/day depending on the indication (Tourette by weight). Autism irritability (6–17 y): 2 mg/day up to 5–15 mg/day. Adjunct in depression: 2–5 mg/day (maximum 15 mg). Long-acting injection 400 mg monthly. Not given as mg/kg.');
+dgDoseRec('clozapine','200–450 mg/day','1–2 (larger dose at night)','900 mg/day',900,null,'Not weight-based. Restart titration if more than 48 hours are missed.');
+dgDoseRec('amisulpride','400–800 mg/day for acute psychosis','1–2 (divide doses above 400 mg)','1,200 mg/day',1200,null,'Not weight-based. Halve the dose if CrCl is 30–60 mL/min.');
+dgDoseRec('lurasidone','40–120 mg/day','1 (with a meal of at least 350 kcal)','160 mg/day (80 mg in moderate–severe renal or hepatic impairment)',160,null,'Not weight-based. Take with food.');
+dgDoseRec('zuclopenthixol_dec','200–400 mg every 2–4 weeks','Not daily: one deep IM injection every 2–4 weeks','600 mg per week (no more than 2 mL per site)',null,null,'Depot injection: not weight-based.');
+
+/* ── mood stabilisers and antiepileptics ── */
+dgDoseRec('lithium','Adjusted to the blood level; usually 400–1,200 mg/day','1 (at night) or 2','No fixed maximum: dose to a serum level of 0.4–1.0 mmol/L (toxicity above 1.5 mmol/L)',null,null,'Not weight-based. Dose by 12-hour serum level. Not for children under 12.');
+dgDoseRec('valproate','1–2 g/day','2–3 (1–2 for modified-release)','2,500 mg/day (60 mg/kg/day)',2500,[10,30,60],'Child epilepsy: 10–15 mg/kg/day, up to 20–30 mg/kg/day (maximum 60 mg/kg/day).');
+dgDoseRec('carbamazepine','400–1,200 mg/day','2–3 (2 for modified-release)','1,600 mg/day; 2,000 mg/day in specialist use',1600,[10,20,null],'Child epilepsy: start 5 mg/kg/day, increase to 10–20 mg/kg/day in 2–3 doses.');
+dgDoseRec('lamotrigine','Bipolar maintenance 200 mg/day; epilepsy 100–400 mg/day','1–2','400 mg/day (200 mg usual maintenance in bipolar disorder)',400,null,'Child epilepsy depends on co-medication. With valproate: maintenance 1–5 mg/kg/day. Without valproate or enzyme inducers: 4.5–7.5 mg/kg/day (max 300 mg). With enzyme inducers: 5–15 mg/kg/day (max 400 mg). Titrate very slowly because of the risk of serious rash.');
+dgDoseRec('phenytoin','Maintenance 300 mg/day (about 3–4 mg/kg/day)','1–2','600 mg/day oral. IV loading 15–20 mg/kg at 50 mg/min or slower',600,[4,8,null],'Adults about 3–4 mg/kg/day; children about 5–8 mg/kg/day. IV loading dose 15–20 mg/kg. Adjust to the blood level.');
+dgDoseRec('phenobarbital','60–180 mg at night (1–4 mg/kg/day)','1–2','No fixed maximum: guided by blood level. IV loading 10–20 mg/kg at up to 100 mg/min',null,[3,8,null],'Child 3–8 mg/kg/day. Neonatal seizures: 20 mg/kg load, then 2.5–5 mg/kg/day.');
+dgDoseRec('levetiracetam','1–3 g/day (500–1,500 mg twice daily)','2','3,000 mg/day',3000,[20,60,null],'Child 4–11 y: 10 mg/kg twice daily, increasing to 30 mg/kg twice daily (20–60 mg/kg/day). IV status epilepticus (single loading dose): 60 mg/kg (maximum 4.5 g) over 10 minutes.');
+dgDoseRec('topiramate','200–400 mg/day for epilepsy','2','400 mg/day',400,[5,9,null],'Child epilepsy: start 0.5–1 mg/kg/day, increase to 5–9 mg/kg/day. Halve the dose in renal impairment.');
+dgDoseRec('oxcarbazepine','600–2,400 mg/day','2','2,400 mg/day',2400,[8,30,null],'Child 4–16 y: 8–10 mg/kg/day in two doses, increasing to 30 mg/kg/day.');
+dgDoseRec('gabapentin','900–3,600 mg/day','3','3,600 mg/day',3600,[25,35,null],'Child epilepsy (specialist, US labelling): 25–35 mg/kg/day in three doses for ages 3–11 years.');
+dgDoseRec('pregabalin','150–600 mg/day','2–3','600 mg/day',600,null,'No standard mg/kg dosing for psychiatric use in children. Specialist epilepsy use only.');
+dgDoseRec('ethosuximide','500–1,500 mg/day','1–2','1,500 mg/day',1500,[20,40,null],'Child 3–6 y: start 250 mg/day, increase to 20–40 mg/kg/day (max 1.5 g/day).');
+dgDoseRec('lacosamide','200–400 mg/day','2','400 mg/day (250–300 mg/day in severe renal or hepatic impairment)',400,null,'Child (specialist): about 6–12 mg/kg/day for 11–<30 kg and 4–8 mg/kg/day for 30–<50 kg, in two doses; adult dosing from 50 kg.');
+dgDoseRec('zonisamide','200–400 mg/day','1–2','600 mg/day',600,null,'Children: specialist use only; no standard mg/kg dose in this guide.');
+
+/* ── antidepressants ── */
+dgDoseRec('fluoxetine','20–60 mg/day','1 (morning)','80 mg/day',80,null,'Not weight-based. Adolescent depression (8–18 y): start 10 mg, increase to 20 mg after 1–2 weeks.');
+dgDoseRec('sertraline','50–200 mg/day','1','200 mg/day',200,null,'Not weight-based. Child OCD (6–17 y): start 25 mg (6–12 y) or 50 mg (13–17 y), up to 200 mg.');
+dgDoseRec('escitalopram','10–20 mg/day','1','20 mg/day (10 mg in the elderly or hepatic impairment)',20,null,'Not weight-based.');
+dgDoseRec('citalopram','20–40 mg/day','1','40 mg/day (20 mg over 65 years, hepatic impairment or with CYP2C19 inhibitors)',40,null,'Not weight-based.');
+dgDoseRec('paroxetine','20–50 mg/day for depression; 40 mg for panic or OCD','1 (morning)','50 mg/day for depression; 60 mg/day for panic or OCD',50,null,'Not weight-based. Not recommended under 18 years in the UK.');
+dgDoseRec('fluvoxamine','100–300 mg/day','1 at night (2 if above 150 mg)','300 mg/day',300,null,'Child OCD (8–17 y): start 25 mg, up to 200 mg. Not given as mg/kg.');
+dgDoseRec('venlafaxine','75–225 mg/day','1 (XR) or 2–3 (IR)','375 mg/day in specialist care',375,null,'Not weight-based.');
+dgDoseRec('duloxetine','60 mg/day','1','120 mg/day (doses above 60 mg add little)',120,null,'Not weight-based.');
+dgDoseRec('mirtazapine','15–45 mg/day','1 (at night)','45 mg/day',45,null,'Not weight-based. Not recommended under 18 years.');
+dgDoseRec('bupropion','150–300 mg/day','1–2 (at least 8 hours apart above 150 mg)','300 mg/day (US SR 400 mg, XL 450 mg, with higher seizure risk)',300,null,'Not weight-based. Not recommended under 18 years.');
+dgDoseRec('trazodone','150–300 mg/day for depression; 25–100 mg at night for sleep','1 at night or in divided doses','300 mg/day (US: 400 mg outpatients, 600 mg inpatients)',300,[1.5,2,6],'Off-label in children: about 1.5–2 mg/kg/day in divided doses, specialist only.');
+dgDoseRec('amitriptyline','75–150 mg/day for depression; 10–75 mg/day for pain','1 (at night) or 2','150–200 mg/day (US labelling: up to 300 mg in hospital)',200,null,'Not recommended for depression in children. No standard mg/kg dose.');
+dgDoseRec('clomipramine','100–150 mg/day for OCD','1 at night or 2','250 mg/day',250,[1,3,3],'Child OCD (≥10 y): start 25 mg, up to 3 mg/kg/day (maximum 100–200 mg/day). Elderly: start 10 mg, maximum 75 mg/day.',200);
+dgDoseRec('imipramine','75–150 mg/day for depression','1 at night or divided','200 mg/day outpatients; 300 mg/day in hospital',200,[null,2.5,2.5],'Enuresis (≥6 y): 25 mg at night; 8–11 y 25–50 mg; over 11 y 50–75 mg; maximum 2.5 mg/kg/day; limit to 3 months.',75);
+dgDoseRec('nortriptyline','75–100 mg/day','1 at night or divided','150 mg/day',150,null,'Not weight-based in this guide. Therapeutic level about 50–150 ng/mL.');
+dgDoseRec('phenelzine','60–90 mg/day','3 (divided)','90 mg/day',90,null,'Not weight-based. Not for children.');
+
+/* ── benzodiazepines, hypnotics, anxiolytics ── */
+dgDoseRec('diazepam','Anxiety 6–30 mg/day (2–10 mg three times daily)','2–4','30 mg/day for anxiety (short course). Status epilepticus: 10–20 mg IV per dose',30,null,'Child status epilepticus (per dose, not per day): 0.1–0.3 mg/kg IV slowly (max 10 mg) or 0.5 mg/kg PR (max 10 mg).');
+dgDoseRec('lorazepam','Anxiety 1–4 mg/day; agitation 1–2 mg per dose','2–3 by mouth; as needed IM/IV','Agitation: 4 mg per 24 h (UK); US parenteral up to 8 mg/day',null,null,'Status epilepticus (per dose, not per day): 0.1 mg/kg IV slowly (max 4 mg), repeated once after 10 minutes.');
+dgDoseRec('clonazepam','1–4 mg/day for panic; 4–8 mg/day for epilepsy','2–3 (or 1 at night)','Panic: about 4 mg/day. Epilepsy (specialist): 20 mg/day',20,[0.01,0.03,0.05],'Child epilepsy initial dose 0.01–0.03 mg/kg/day (maximum 0.05 mg/kg/day), in 2–3 doses. Maintenance may reach 0.1–0.2 mg/kg/day under specialist care.');
+dgDoseRec('alprazolam','Anxiety 0.75–1.5 mg/day; panic 1–4 mg/day','3','10 mg/day (specialist use)',10,null,'Not weight-based. Not recommended in children.');
+dgDoseRec('zopiclone','3.75–7.5 mg at night','1 (at night)','7.5 mg/day (3.75 mg in the elderly or hepatic impairment)',7.5,null,'Not for children.');
+dgDoseRec('zolpidem','10 mg at night (5 mg in the elderly or women, US)','1 (at night)','10 mg/day',10,null,'Not for children.');
+dgDoseRec('eszopiclone','1–3 mg at night','1 (at night)','3 mg/day (2 mg in the elderly)',3,null,'Not for children.');
+dgDoseRec('suvorexant','10–20 mg at night','1 (at night)','20 mg/day',20,null,'Not for children.');
+dgDoseRec('melatonin','Adult ≥55 y: 2 mg prolonged-release at bedtime; child 1–5 mg','1 (before bed)','Adult: 2 mg prolonged-release (UK licence). Child: usually up to 5 mg at bedtime (specialist; there is no single licensed ceiling)',null,[0.05,0.15,null],'Child (autism or ADHD related insomnia, specialist): about 0.05–0.15 mg/kg at bedtime; usual 1–5 mg.');
+dgDoseRec('buspirone','15–30 mg/day','2–3','45 mg/day (some references up to 60 mg)',45,null,'Not weight-based. Not established in children.');
+dgDoseRec('hydroxyzine','50–100 mg/day','2–4','100 mg/day (50 mg in the elderly)',100,[null,2,2],'Child up to 40 kg: up to 2 mg/kg/day in divided doses.');
+dgDoseRec('promethazine','Sedation or agitation 25–50 mg per dose','Up to 2–4 (every 4–6 h as needed)','100 mg/day',100,null,'Child 2–5 y: 5–15 mg (max 15 mg/day); 6–10 y: 10–25 mg. Contraindicated under 2 years (fatal respiratory depression).');
+dgDoseRec('diphenhydramine','Allergy 25–50 mg every 4–6 h; sleep 25–50 mg at night','Up to 4–6 (allergy); 1 at night (sleep)','300 mg/day',300,[null,5,5],'Child: up to 5 mg/kg/day in divided doses (max 300 mg/day). 6–11 y: 12.5–25 mg per dose.');
+
+/* ── movement-disorder drugs, beta-blocker, alpha drugs ── */
+dgDoseRec('trihexyphenidyl','5–15 mg/day','3–4','20 mg/day',20,null,'Not weight-based; children rarely.');
+dgDoseRec('procyclidine','10–30 mg/day','3','60 mg/day',60,null,'Not weight-based.');
+dgDoseRec('benztropine','1–6 mg/day for parkinsonism; 1–2 mg IM or IV for acute dystonia','1–2','6 mg/day',6,null,'Not recommended under 3 years. Not weight-based.');
+dgDoseRec('propranolol','Anxiety 10–40 mg 1–3 times a day; tremor 40–160 mg/day','2–3','160 mg/day for tremor or anxiety (80 mg/day for akathisia)',160,null,'No standard weight-based dose for psychiatric use in children. Specialist only.');
+dgDoseRec('prazosin','3–10 mg at night; rarely up to 15 mg','1 at night (up to 3 if used for blood pressure)','20 mg/day (UK blood pressure licence); nightmares rarely need more than 15 mg',20,null,'Not established in children for psychiatric use. First dose at bedtime lying down.');
+dgDoseRec('clonidine','Adult 50–100 micrograms 2–3 times a day','2–3 (child: at night then divided)','Child 300–400 micrograms/day',400,[3,5,null,'micrograms/kg/day'],'Child ADHD or tics: start 25–50 micrograms at night, increase every 3–7 days to 3–5 micrograms/kg/day in 2–3 doses (usual maximum 300–400 micrograms/day).',400,'micrograms');
+dgDoseRec('guanfacine','1–7 mg/day (extended-release)','1','7 mg/day (4 mg/day in children 6–12 y)',7,[0.05,0.12,null],'Target 0.05–0.12 mg/kg once daily. Children 6–12 y: usual maintenance 1–4 mg/day. Adolescents ≥50 kg: up to 7 mg/day.',4);
+
+/* ── ADHD and wake-promoting ── */
+dgDoseRec('methylphenidate','Adult: 5 mg IR two to three times a day, up to 60 mg/day; XR 18–72 mg/day','2–3 (IR) or 1 (XR in the morning)','60 mg/day (US); 90 mg/day (UK adults). Child specialist maximum 2.1 mg/kg/day',60,[0.3,1,2.1],'Child ≥6 y: usual 0.3–1 mg/kg/day; specialist maximum 2.1 mg/kg/day and not above 60 mg/day (US) or 90 mg/day (UK). Last dose before 4 pm.',60);
+dgDoseRec('atomoxetine','80–100 mg/day (adult, or over 70 kg)','1–2','100 mg/day. Child under 70 kg: 1.8 mg/kg/day or 100 mg, whichever is less',100,[0.5,1.2,1.8],'Child under 70 kg: start 0.5 mg/kg/day for at least 7 days, then 1.2 mg/kg/day (maximum 1.8 mg/kg/day or 100 mg).',100);
+dgDoseRec('amphetamine','Child 5–40 mg/day; adult 5–60 mg/day','1–2 (IR in divided doses)','40 mg/day in children; 60 mg/day in adults',60,null,'Child ≥6 y: start 2.5–5 mg once or twice daily, increase by 2.5–5 mg weekly. Not given as mg/kg.',40);
+dgDoseRec('lisdexamfetamine','30–70 mg/day','1 (morning)','70 mg/day (50 mg if CrCl below 30)',70,null,'Not weight-based. Children 6–17 y: fixed 30–70 mg/day.',70);
+dgDoseRec('modafinil','200–400 mg/day','1–2 (morning and midday)','400 mg/day',400,null,'Not established in children.');
+
+/* ── addiction medicines ── */
+dgDoseRec('naltrexone','50 mg/day (or 350 mg per week in three doses)','1','50 mg/day',50,null,'Not weight-based. Not for children.');
+dgDoseRec('acamprosate','1,998 mg/day if 60 kg or more; 1,332 mg/day if under 60 kg','3','1,998 mg/day',1998,null,'Weight-banded, not mg/kg: 60 kg or more: 666 mg three times a day. Under 60 kg: 666 mg in the morning, 333 mg at midday and 333 mg at night.');
+dgDoseRec('disulfiram','100–200 mg/day (maintenance)','1','200 mg/day maintenance (first-day loading up to 800 mg in the UK; US limit 500 mg/day)',500,null,'Not weight-based. Not for children.');
+dgDoseRec('thiamine','Prophylaxis 100 mg 1–3 times a day; Wernicke 500 mg IV three times daily','1–3 (oral); 3 (IV in Wernicke)','Oral: no fixed maximum. IV for Wernicke: 1,500 mg/day',1500,null,'Not weight-based for adults. Give before glucose.');
+dgDoseRec('buprenorphine','8–16 mg/day sublingual (maintenance)','1 (may be split)','24 mg/day (32 mg in some guidelines)',24,null,'Not weight-based. Adolescents 16 y and over: same as adults under specialist care.');
+dgDoseRec('methadone','60–120 mg/day (maintenance)','1 (supervised initially)','No licensed ceiling: titrate to response. Day 1 maximum 30 mg; no more than 30 mg increase per week; ECG if above 100 mg/day',null,null,'Not weight-based for opioid substitution.');
+dgDoseRec('naloxone','0.4–2 mg IV, repeated every 2–3 minutes','Repeat every 2–3 min to effect (not a daily drug)','10 mg in total in an emergency; reconsider the diagnosis if there is no response',10,null,'Child: weight-based dosing varies by indication (full reversal about 0.1 mg/kg per dose to a maximum of 2 mg). Follow your local paediatric emergency protocol.');
+dgDoseRec('varenicline','1 mg twice daily','2','2 mg/day (0.5 mg twice daily if CrCl is below 30)',2,null,'Not weight-based. Not established under 18 years.');
+dgDoseRec('nrt','Patch 21 mg/24 h for 10 or more cigarettes a day; gum or lozenge 2–4 mg','Patch once daily; gum or lozenge as needed','Gum or lozenge: up to 15 pieces a day (UK) or 24 (US); combine patch with one short-acting form',null,null,'Not weight-based. Not for children under 12 without advice.');
+
+/* ── dementia drugs ── */
+dgDoseRec('donepezil','5–10 mg/day','1 (at night)','10 mg/day (23 mg in specialist severe disease)',10,null,'Not used in children.');
+dgDoseRec('memantine','20 mg/day','1–2','20 mg/day (10 mg/day if CrCl 30–49 mL/min)',20,null,'Not used in children.');
+dgDoseRec('rivastigmine','Oral 6–12 mg/day; patch 9.5 mg/24 h','2 (oral); 1 (patch)','12 mg/day orally; patch 13.3 mg/24 h',12,null,'Not used in children.');
+dgDoseRec('galantamine','16–24 mg/day','2 (IR) or 1 (ER)','24 mg/day (16 mg/day in moderate hepatic or renal impairment)',24,null,'Not used in children.');
+
+/* ── bladder, enuresis, laxatives ── */
+dgDoseRec('desmopressin','200–400 micrograms at bedtime (tablet)','1 (bedtime)','400 micrograms at bedtime by mouth (40 micrograms intranasal)',400,null,'Enuresis (≥5 y): not weight-based. Limit fluids from 1 hour before to 8 hours after the dose.',null,'micrograms');
+dgDoseRec('oxybutynin','5 mg two or three times a day (immediate-release)','2–3 (IR) or 1 (ER or patch twice weekly)','20 mg/day immediate-release (ER 30 mg)',20,null,'Child ≥5 y: 2.5–5 mg two or three times daily (maximum 15 mg/day). Not weight-based.',15);
+dgDoseRec('tolterodine','2 mg twice daily (IR) or 4 mg once daily (ER)','2 (IR) or 1 (ER)','4 mg/day',4,null,'Not established in children.');
+dgDoseRec('peg3350','Adult 17 g once daily in 240 mL of fluid','1','Adult 17 g/day (34 g in some regimens). Child disimpaction up to 100 g/day',100,[0.4,0.8,null,'g/kg/day'],'Child maintenance 0.4–0.8 g/kg/day once daily. Disimpaction 1–1.5 g/kg/day for 3–6 days (maximum 100 g/day).',100,'g');
+dgDoseRec('docusate','50–360 mg/day','1–4','360 mg/day',360,null,'Child 3–6 y: 20–60 mg/day; 6–12 y: 40–150 mg/day. By age band, not mg/kg.');
+dgDoseRec('senna','7.5–15 mg at night','1 (at night)','30 mg/day',30,null,'Child 2–6 y: 3.75–7.5 mg at night; 6–12 y: 7.5–15 mg at night. By age band, not mg/kg.');
+
+/* ═══ Medscape-style detail layer: formulations, pharmacokinetics, organ-impairment dosing, breastfeeding,
+       stopping, missed doses and patient counselling. Group templates fill in what is shared by a drug class. ═══ */
+const DG_GROUP = {};
+(function(){
+  var g={
+   ap_typ:['haloperidol','chlorpromazine'],
+   depot:['fluphenazine_dec','zuclopenthixol_dec'],
+   ap_atyp:['risperidone','olanzapine','quetiapine','aripiprazole','amisulpride','lurasidone','clozapine'],
+   lithium:['lithium'],
+   mood_ac:['valproate','carbamazepine','lamotrigine'],
+   ssri:['fluoxetine','sertraline','escitalopram','citalopram','paroxetine','fluvoxamine'],
+   snri:['venlafaxine','duloxetine'],
+   tca:['amitriptyline','clomipramine','imipramine','nortriptyline'],
+   maoi:['phenelzine'],
+   ad_other:['mirtazapine','bupropion','trazodone'],
+   benzo:['diazepam','lorazepam','clonazepam','alprazolam'],
+   zdrug:['zopiclone','zolpidem','eszopiclone','suvorexant'],
+   melatonin:['melatonin'], buspirone:['buspirone'],
+   antihist:['hydroxyzine','promethazine','diphenhydramine'],
+   anticholin:['trihexyphenidyl','procyclidine','benztropine'],
+   bblocker:['propranolol'], alpha:['prazosin'], clonidine:['clonidine'], guanfacine:['guanfacine'],
+   stimulant:['methylphenidate','amphetamine','lisdexamfetamine'], modafinil:['modafinil'], atomoxetine:['atomoxetine'],
+   naltrexone:['naltrexone'], acamprosate:['acamprosate'], disulfiram:['disulfiram'], thiamine:['thiamine'],
+   buprenorphine:['buprenorphine'], methadone:['methadone'], naloxone:['naloxone'],
+   varenicline:['varenicline'], nrt:['nrt'],
+   dementia:['donepezil','galantamine','rivastigmine','memantine'],
+   phenytoin:['phenytoin'], phenobarbital:['phenobarbital'], levetiracetam:['levetiracetam'], topiramate:['topiramate'],
+   oxcarbazepine:['oxcarbazepine'], gabapentinoid:['gabapentin','pregabalin'], ethosuximide:['ethosuximide'], lacosamide:['lacosamide'], zonisamide:['zonisamide'],
+   antimuscarinic:['oxybutynin','tolterodine'], desmopressin:['desmopressin'],
+   peg:['peg3350'], docusate:['docusate'], senna:['senna']
+  };
+  Object.keys(g).forEach(function(k){ g[k].forEach(function(id){ DG_GROUP[id]=k; }); });
+})();
+
+const DG_GT = {
+ ap_typ:{
+  stop:'Do not stop suddenly. Reduce gradually over several weeks and watch for relapse, rebound cholinergic symptoms (nausea, sweating, insomnia) and withdrawal dyskinesia.',
+  missed:'Take it as soon as you remember. If the next dose is nearly due, skip the missed one. Never double up.',
+  counsel:['Take it regularly, even when you feel well. Stopping early is a common cause of relapse.','It can cause drowsiness. Take care with driving and machinery, and avoid alcohol.','Tell the nurse or doctor at once about stiffness, shaking, restlessness, muscle spasms, high fever or fainting.','Stand up slowly to avoid dizziness.','Tell the team about every other medicine, including herbal ones.']},
+ depot:{
+  stop:'Missing injections allows relapse. Plan the next injection date before the patient leaves. Effects wear off slowly, over weeks to months.',
+  missed:'If an injection is late, contact the prescriber. Do not give extra doses to catch up. A late injection may need oral cover.',
+  counsel:['Keep every injection appointment and write the next date down.','Effects, and side effects, continue for weeks after the last injection.','Report stiffness, restlessness, spasms, fever or feeling very drowsy.','Avoid alcohol and tell staff about new medicines.']},
+ ap_atyp:{
+  stop:'Do not stop suddenly. Reduce gradually over at least several weeks to lower the risk of relapse, insomnia, nausea and withdrawal movements.',
+  missed:'Take it when you remember unless it is nearly time for the next dose. Do not double up.',
+  counsel:['Take it every day, even when you feel well.','It can cause drowsiness and weight gain. Eat regular, healthy meals, stay active and weigh yourself regularly.','Stand up slowly. Avoid alcohol, and take care with driving until you know how it affects you.','Report stiffness, shaking, restlessness, fever, unusual movements or fainting.','Attend monitoring appointments for weight, blood tests and blood pressure.']},
+ lithium:{
+  stop:'Do not stop suddenly because the risk of relapse is high. Reduce gradually over at least 4 weeks, ideally longer.',
+  missed:'Take it as soon as you remember unless it is nearly time for the next dose. Never double up.',
+  counsel:['Take it at the same time each day and have blood tests exactly as arranged (12 hours after the last dose).','Drink plenty of fluids and keep your salt intake steady. Take extra care in hot weather, with heavy exercise, diarrhoea or vomiting.','Tell every doctor and pharmacist you take lithium before any new medicine, especially ibuprofen and other NSAIDs, water tablets and ACE inhibitors.','Stop the dose and get help for vomiting, diarrhoea, worsening shaking, unsteadiness, slurred speech or confusion (possible toxicity).','Carry a lithium alert card and plan ahead for pregnancy.']},
+ mood_ac:{
+  stop:'Do not stop suddenly because of the risk of seizures and mood relapse. Reduce gradually under specialist guidance.',
+  missed:'Take it as soon as you remember unless it is nearly time for the next dose. Do not double up.',
+  counsel:['Do not stop it suddenly. Have blood tests as arranged.','Report any rash, fever, yellow skin or eyes, or unusual bruising straight away.','Tell the team about every other medicine, including the contraceptive pill.']},
+ ssri:{
+  stop:'Do not stop suddenly. Reduce gradually over at least 4 weeks to avoid discontinuation symptoms (dizziness, electric-shock sensations, nausea, anxiety, insomnia).',
+  missed:'Take it when you remember unless it is nearly time for the next dose. Do not double up.',
+  counsel:['It can take 2–4 weeks to feel the full benefit. Keep taking it even if you notice no change at first.','Report any worsening mood, agitation or thoughts of self-harm, especially in the first weeks, after a dose change, and in anyone under 25.','Take it at the same time each day (in the morning if it keeps you awake).','Avoid alcohol. Tell the team about other medicines, including aspirin, ibuprofen (bleeding risk) and St John’s wort.','Do not stop it suddenly.']},
+ snri:{
+  stop:'Do not stop suddenly. Discontinuation symptoms are common (dizziness, nausea, brain zaps, anxiety, sweating). Taper over at least 4 weeks, often longer for venlafaxine.',
+  missed:'Take it when you remember unless it is nearly time for the next dose. Do not double up.',
+  counsel:['It may take several weeks to work.','Report agitation, worsening mood or thoughts of self-harm.','Blood pressure can rise (especially venlafaxine): have it checked regularly.','Avoid alcohol. Tell the team about other medicines, especially tramadol, triptans and MAOIs.']},
+ tca:{
+  stop:'Reduce gradually over at least 4 weeks to avoid withdrawal (nausea, headache, insomnia, vivid dreams).',
+  missed:'If you take it at night and miss a dose, skip it if you remember the next morning. Do not double up.',
+  counsel:['Take it at night, because it causes drowsiness. Avoid alcohol and take care with driving.','Dry mouth and constipation are common: drink water, use sugar-free gum and eat fibre.','Stand up slowly. Report a fast or irregular heartbeat or fainting.','It is dangerous in overdose: store it safely and keep only small supplies at home.','Report worsening mood or thoughts of self-harm.']},
+ maoi:{
+  stop:'Reduce gradually. Interactions persist for 2 weeks after stopping, so keep following the diet and medicine restrictions during that time.',
+  missed:'Take it when you remember if the next dose is more than a few hours away. Do not double up.',
+  counsel:['Follow the tyramine diet strictly: avoid mature cheese, cured or fermented meats, yeast extracts, soy sauce, broad bean pods and tap beer. Carry the MAOI card.','Never take cold remedies, decongestants, other antidepressants, pethidine or stimulants without checking.','Get help at once for severe headache, stiff neck, fast heartbeat, chest pain or very high blood pressure.','Change position slowly.']},
+ ad_other:{
+  stop:'Reduce gradually over several weeks to avoid discontinuation symptoms.',
+  missed:'Take it when you remember unless it is nearly time for the next dose. Do not double up.',
+  counsel:['It can take 2–4 weeks to feel the benefit.','Report worsening mood, agitation or thoughts of self-harm, especially in the first weeks.','Avoid alcohol and tell the team about other medicines.']},
+ benzo:{
+  stop:'Do not stop suddenly after regular use: seizures, severe anxiety, tremor and insomnia can occur. Reduce in small steps (about 5–10% of the dose every 1–2 weeks, slower if needed).',
+  missed:'Take it when you remember if it is soon. Skip it if it is nearly time for the next dose. Never double up.',
+  counsel:['Use for the shortest time possible, usually 2–4 weeks. Dependence can develop.','Do not drink alcohol or take opioids or other sedatives with it, because breathing can slow dangerously.','It causes drowsiness and slows reactions. Do not drive or use machinery until you know how it affects you.','Do not stop suddenly after regular use.','In older people it increases the risk of falls and confusion.']},
+ zdrug:{
+  stop:'After more than 2–4 weeks of nightly use, reduce gradually to avoid rebound insomnia.',
+  missed:'Only take it when you are going to bed with at least 7–8 hours available for sleep. Skip the dose if that time has passed.',
+  counsel:['Take it only when you are about to go to bed and can sleep for 7–8 hours.','Do not drive or use machinery the next day if you feel drowsy.','Never take it with alcohol or other sedatives.','Rarely it causes sleep-walking, driving or eating while asleep. Stop it and tell the doctor at once.','For short-term use only.']},
+ melatonin:{
+  stop:'Can be stopped without tapering.',
+  missed:'Skip it if it is too late. Do not double up.',
+  counsel:['Take it 1–2 hours before bedtime at the same time each night.','Do not drive or use machinery if drowsy.','Pair it with good sleep habits: regular bedtime, dark quiet room, no screens before bed.','Tell the team about other medicines, especially fluvoxamine.']},
+ buspirone:{
+  stop:'No withdrawal syndrome, but reduce gradually if on higher doses.',
+  missed:'Take it when you remember unless the next dose is soon.',
+  counsel:['It takes 2–4 weeks to work and is not for as-needed use.','Take it the same way each time, always with food or always without.','Avoid grapefruit juice and alcohol.','It may cause dizziness or nausea.']},
+ antihist:{
+  stop:'No taper is needed after short-term use.',
+  missed:'Take it when you remember if it is soon, and skip it if the next dose is close.',
+  counsel:['It causes drowsiness. Do not drive or use machinery, and avoid alcohol.','Dry mouth, blurred vision, constipation and difficulty passing urine can occur.','Do not use it for long periods unless advised.','Report a fast or irregular heartbeat or fainting.']},
+ anticholin:{
+  stop:'Reduce gradually after long use to avoid rebound symptoms.',
+  missed:'Take it when you remember unless the next dose is soon.',
+  counsel:['Dry mouth, blurred vision, constipation and difficulty passing urine are common.','It may cause confusion and memory problems, especially in older people.','Avoid overheating, because sweating is reduced.','Avoid alcohol and do not stop it suddenly after long use.']},
+ bblocker:{
+  stop:'Do not stop suddenly because of rebound fast heart rate, angina and rising blood pressure. Taper over 1–2 weeks.',
+  missed:'Take it when you remember unless the next dose is due within a few hours.',
+  counsel:['Do not stop it suddenly.','Report wheeze or breathlessness. Avoid it if you have asthma or heart block.','It may cause tiredness, cold hands and feet, a slow pulse and vivid dreams.','In diabetes it can mask warning signs of low blood sugar.']},
+ alpha:{
+  stop:'Can be stopped; reduce gradually if used long-term.',
+  missed:'Take it when you remember. If stopped for more than 2 days, restart at 1 mg at bedtime.',
+  counsel:['Take the first dose, and any increase, at bedtime lying down. Dizziness or fainting can follow the first dose.','Stand up slowly and avoid alcohol.','Report fainting, a pounding heartbeat or a painful prolonged erection.']},
+ clonidine:{
+  stop:'Do not stop suddenly. Rebound high blood pressure, agitation and headache can occur. Taper over several days or longer.',
+  missed:'Take it when you remember unless the next dose is soon. Do not double up.',
+  counsel:['Do not stop it suddenly.','It can cause drowsiness, dry mouth, dizziness and low blood pressure.','Stand up slowly and avoid alcohol.','In children, giving the main dose at night limits daytime sleepiness.']},
+ guanfacine:{
+  stop:'Do not stop suddenly. Taper by about 1 mg every 3–7 days to avoid rebound high blood pressure.',
+  missed:'Take it when you remember the same day. If 2 or more doses are missed, ask the prescriber about re-titration.',
+  counsel:['Swallow it whole. Do not crush, chew or break the extended-release tablet.','Avoid taking it with a high-fat meal, and avoid grapefruit juice.','Do not stop it suddenly.','Drowsiness, dizziness, tiredness, low blood pressure and a slow heart rate can occur.']},
+ stimulant:{
+  stop:'Can usually be stopped without tapering, but expect rebound tiredness, low mood and irritability. Stop under supervision.',
+  missed:'If you miss a morning dose, take it only before midday. Skip it if it is late, to protect sleep.',
+  counsel:['Take it in the morning (and early afternoon if prescribed). Give the last dose before 4 pm to protect sleep.','Poor appetite and weight loss are common. Eat a good breakfast and an evening meal; height and weight are monitored in children.','Pulse and blood pressure are checked regularly.','Keep it locked away. It is a controlled drug that can be misused, and it must never be shared.','Report chest pain, fainting, palpitations, hallucinations or severe agitation.']},
+ modafinil:{
+  stop:'Can be stopped without tapering.',
+  missed:'Skip a missed dose if it is late in the day. Do not double up.',
+  counsel:['Take it in the morning and avoid late doses.','Report any rash, blistering or mouth sores at once.','It can make hormonal contraceptives less effective. Use an extra method for a month after stopping.','Avoid alcohol and excess caffeine.']},
+ atomoxetine:{
+  stop:'Can be stopped without tapering.',
+  missed:'Take it when you remember the same day. Do not double up.',
+  counsel:['It can take 4–6 weeks to work fully.','Report worsening mood, agitation or thoughts of self-harm, especially in children.','Report yellow skin or eyes, dark urine or upper abdominal pain (rare liver injury).','Blood pressure and pulse are monitored. Do not open the capsules, because the contents irritate the eyes.']},
+ naltrexone:{
+  stop:'Can be stopped without a taper. Opioid tolerance falls, so overdose risk rises if opioids are used afterwards.',
+  missed:'Take it when you remember. Do not double up.',
+  counsel:['Be opioid-free for 7–10 days before the first dose. Some clinics use a naloxone challenge.','Carry a card saying you take naltrexone. Opioid painkillers and cough medicines will not work as expected.','Never try to overcome the block with large opioid doses. It can be fatal.','Report yellow skin or eyes, dark urine or upper abdominal pain.']},
+ acamprosate:{
+  stop:'Can be stopped without a taper. It is usually continued for 6–12 months.',
+  missed:'Take it when you remember. Skip it if the next dose is close. Do not double up.',
+  counsel:['Start within 7 days of the last drink and keep taking it even if you relapse. It works alongside counselling.','Take it with meals to help you remember.','Diarrhoea, wind and nausea are the commonest side effects.','Do not take it if pregnant or breastfeeding.']},
+ disulfiram:{
+  stop:'Alcohol reactions can still occur for up to 1–2 weeks after the last dose.',
+  missed:'Take it when you remember. Do not double up.',
+  counsel:['Never drink alcohol while taking it, or for up to 2 weeks after stopping. A severe reaction (flushing, headache, vomiting, fast heartbeat, low blood pressure) can occur.','Avoid hidden alcohol in mouthwash, aftershave, sauces and cough syrups.','Carry a card. A family member can help supervise doses.','Report yellow skin or eyes, dark urine or severe tiredness. Liver tests are done.']},
+ thiamine:{
+  stop:'No taper is needed.',
+  missed:'Take it as soon as you remember.',
+  counsel:['Take it every day. Do not skip doses while drinking heavily or eating poorly.','Give it before any glucose in a person at risk of Wernicke’s encephalopathy.','IV injections can rarely cause allergic reactions, so observe the patient.']},
+ buprenorphine:{
+  stop:'Taper slowly under supervision. Sudden stopping causes opioid withdrawal.',
+  missed:'Take it as soon as you remember. If several days were missed, contact the clinic first because tolerance may have fallen.',
+  counsel:['Place the tablet under the tongue and let it dissolve completely. Do not swallow or chew it.','Do not take other opioids, alcohol or sedatives. Breathing can slow dangerously.','Do not start until you are in moderate withdrawal, or sudden severe withdrawal can be triggered.','Keep it away from children.','Rinse your mouth with water after it dissolves and wait before brushing your teeth.']},
+ methadone:{
+  stop:'Taper very slowly under supervision (small reductions, for example 5–10% a week). Sudden stopping causes severe withdrawal.',
+  missed:'If you miss 3 or more days, contact the clinic before restarting. Tolerance falls and the usual dose may now be dangerous.',
+  counsel:['Take it exactly as prescribed, under supervision at first. Never share it.','Do not drink alcohol or take other sedatives or opioids. There is a risk of fatal overdose, especially in the first days and after dose increases.','Report fainting, palpitations or dizziness, because methadone can prolong the QT interval.','Keep it locked away from children. One dose can kill a child.','Carry naloxone and teach family how to use it.']},
+ naloxone:{
+  stop:'Not applicable. This is an emergency drug.',
+  missed:'Not applicable.',
+  counsel:['Call emergency services even after giving naloxone, because its effect wears off before many opioids (especially methadone).','Place the person in the recovery position and stay with them. Repeat the dose after 2–3 minutes if there is no response.','It can trigger severe withdrawal in people who are dependent on opioids.','Train family and friends, and keep it where it can be reached quickly.']},
+ varenicline:{
+  stop:'Can be stopped without a taper (some people reduce over a week).',
+  missed:'Take it when you remember. Skip it if the next dose is close.',
+  counsel:['Set a quit date between day 8 and day 35 and keep taking it even if you slip.','Take it after food with a full glass of water to reduce nausea.','Report agitation, low mood, or thoughts of self-harm, and stop the medicine if they occur.','Take care driving until you know how it affects you. It can reduce alcohol tolerance.']},
+ nrt:{
+  stop:'Reduce the strength gradually over 8–12 weeks.',
+  missed:'Not applicable; use as needed for cravings.',
+  counsel:['Use the strength that matches how many cigarettes you smoked. A patch plus gum or lozenge works better than either alone.','Rotate the patch site daily. Remove it at bedtime if it causes vivid dreams or insomnia.','Chew gum slowly and park it between cheek and gum. Avoid eating and drinking acidic drinks for 15 minutes before and during use.','Cravings should reduce. Do not smoke while using it unless advised.']},
+ dementia:{
+  stop:'Do not stop suddenly unless advised, because symptoms may worsen quickly. Reduce gradually where possible.',
+  missed:'Give it when remembered unless it is nearly time for the next dose. If rivastigmine has been stopped for more than 3 days, restart at the lowest dose.',
+  counsel:['Give it at the same time each day. A pill organiser helps carers.','Cholinesterase inhibitors can cause nausea, vomiting, diarrhoea, weight loss, a slow pulse and vivid dreams. Report fainting or a slow pulse.','Report worsening confusion or drowsiness (especially memantine).','Rivastigmine patch: change it daily, rotate sites and remove the old patch first.']},
+ phenytoin:{
+  stop:'Do not stop suddenly because seizures may return or worsen. Taper over weeks to months under specialist guidance.',
+  missed:'Take it as soon as you remember. If it is nearly time for the next dose, skip it. Do not double up.',
+  counsel:['Take it at the same time each day, and always use the same brand. Capsules and suspension are not interchangeable.','Report rash, fever, swollen glands, unsteadiness, double vision or jerky eye movements.','Gum overgrowth can occur. Brush and floss, and see a dentist.','Many medicines interact, and the contraceptive pill may not work: ask.','Take folic acid if planning pregnancy.']},
+ phenobarbital:{
+  stop:'Do not stop suddenly because seizures and withdrawal can occur. Taper slowly over weeks.',
+  missed:'Take it when you remember unless the next dose is close. Do not double up.',
+  counsel:['It causes drowsiness. Avoid alcohol and driving.','It interacts with many medicines and reduces the effect of the contraceptive pill.','Report rash, breathing problems or confusion.','Do not stop it suddenly.']},
+ levetiracetam:{
+  stop:'Reduce gradually over several weeks.',
+  missed:'Take it as soon as you remember unless the next dose is close. Do not double up.',
+  counsel:['Report mood changes, irritability, aggression, depression or thoughts of self-harm. Behavioural side effects are common.','It can cause drowsiness and dizziness.','Do not stop it suddenly.']},
+ topiramate:{
+  stop:'Reduce gradually over several weeks to avoid seizures.',
+  missed:'Take it as soon as you remember unless the next dose is close. Do not double up.',
+  counsel:['Drink plenty of fluids to reduce the chance of kidney stones.','It can cause tingling, memory and word-finding problems and weight loss. Seek help at once for eye pain or blurred vision.','It can make oestrogen contraceptives less effective and can harm an unborn baby.','Do not stop it suddenly.']},
+ oxcarbazepine:{
+  stop:'Reduce gradually over several weeks to avoid seizures.',
+  missed:'Take it as soon as you remember unless the next dose is close. Do not double up.',
+  counsel:['Report rash, fever or sore throat. Blood sodium can drop, causing nausea, headache or confusion.','It may reduce the effect of hormonal contraceptives.','Dizziness and double vision are common at the start.','Do not stop it suddenly.']},
+ gabapentinoid:{
+  stop:'Taper over at least 1 week, preferably longer, to avoid withdrawal (anxiety, insomnia, sweating, seizures).',
+  missed:'Take it when you remember unless the next dose is close. Do not double up.',
+  counsel:['It causes drowsiness and dizziness. Do not drive until you know how it affects you.','Do not drink alcohol or take opioids or sedatives with it. Breathing may slow.','It may cause weight gain and ankle swelling.','It can be misused. Take it exactly as prescribed, and report mood changes or thoughts of self-harm.']},
+ ethosuximide:{
+  stop:'Do not stop suddenly because of the risk of seizures. Reduce gradually.',
+  missed:'Take it when you remember unless the next dose is close. Do not double up.',
+  counsel:['Take it with food to reduce stomach upset.','Report fever, sore throat, bruising or rash.','Do not stop it suddenly.']},
+ lacosamide:{
+  stop:'Reduce gradually over at least a week to avoid seizures.',
+  missed:'Take it when you remember unless the next dose is close. Do not double up.',
+  counsel:['It may cause dizziness, double vision and nausea. Take care when driving.','Report fainting or a slow or irregular heartbeat.','Do not stop it suddenly.']},
+ zonisamide:{
+  stop:'Reduce gradually over at least 2 weeks to avoid seizures.',
+  missed:'Take it when you remember unless the next dose is close. Do not double up.',
+  counsel:['Drink plenty of fluids to reduce kidney stones. Report rash immediately, because it contains a sulfonamide group.','It can cause drowsiness, weight loss and low mood.','In children, report reduced sweating and fever.','Do not stop it suddenly.']},
+ antimuscarinic:{
+  stop:'Can be stopped without a taper.',
+  missed:'Take it when you remember. Skip it if the next dose is close.',
+  counsel:['Dry mouth, constipation, blurred vision and drowsiness are common. Drink water and chew sugar-free gum.','Avoid overheating, because sweating is reduced.','Report difficulty passing urine, or new confusion, especially in older adults.']},
+ desmopressin:{
+  stop:'Can be stopped; for enuresis a planned break is sometimes used.',
+  missed:'Skip a missed bedtime dose if it is too late. Do not double up.',
+  counsel:['Limit fluids from 1 hour before to 8 hours after the dose to avoid water intoxication.','Report headache, nausea, vomiting, confusion or weight gain at once (low blood sodium).','Stop it during vomiting, diarrhoea or fever and seek advice.']},
+ peg:{
+  stop:'Can be stopped without a taper.',
+  missed:'Take it when you remember.',
+  counsel:['Dissolve it in the stated amount of water and drink extra fluids.','It takes 1–2 days to work.','Report severe abdominal pain, vomiting, or no stool with swelling (possible obstruction).']},
+ docusate:{
+  stop:'Can be stopped without a taper.',
+  missed:'Take it when you remember.',
+  counsel:['Take it with a full glass of water.','It softens stool and works over 1–3 days.','Increase fibre, fluids and activity.']},
+ senna:{
+  stop:'Can be stopped. Use short courses.',
+  missed:'Take it at night when you remember.',
+  counsel:['Take it at night. It works in 6–12 hours.','Use short courses. Long-term use can lead to dependence and low potassium.','It may colour urine yellow-brown, which is harmless.','Do not use it if you have abdominal pain or vomiting of unknown cause.']}
+};
+
+const DG_INFO = {};
+/* ii(id, forms[], [absorption, protein binding, metabolism, elimination, peak, half-life], renal, hepatic, breastfeeding, extra{stop,missed,x[]}) */
+function dgInfoRec(id,form,pk,renal,hepatic,lact,extra){
+  DG_INFO[id]={form:form,pk:{abs:pk[0],bind:pk[1],met:pk[2],elim:pk[3],tmax:pk[4],t12:pk[5]},renal:renal,hepatic:hepatic,lact:lact,x:extra||{}};
+}
+function dgInfoFor(id){
+  var i=DG_INFO[id]; if(!i) return null;
+  var t=DG_GT[DG_GROUP[id]]||{};
+  var x=i.x||{};
+  return {
+    form:i.form, pk:i.pk, renal:i.renal, hepatic:i.hepatic, lact:i.lact,
+    stop:x.stop||t.stop||'', missed:x.missed||t.missed||'',
+    counsel:(x.counsel||t.counsel||[]).concat(x.more||[])
+  };
+}
+
+/* ── antipsychotics ── */
+dgInfoRec('haloperidol',['Tablets 0.5, 1.5, 5, 10, 20 mg','Oral liquid 2 mg/mL','Injection 5 mg/mL','Decanoate depot 50 and 100 mg/mL'],
+ ['Oral bioavailability about 60%; IM is more complete','About 90%','Liver: glucuronidation, then CYP3A4 and CYP2D6; also a moderate CYP2D6 inhibitor','Urine about 30–40%, faeces about 15%','2–6 h oral; 20–40 min IM','14–37 h (oral)'],
+ 'No dose change needed in most patients. Use caution in severe impairment.','Reduce the dose and titrate slowly because it is cleared by the liver.',
+ 'Enters breast milk. If it is needed, use the lowest dose and monitor the infant for sedation and movement problems.',
+ {more:['Report palpitations or fainting. Haloperidol can prolong the QT interval, and an ECG may be needed.']});
+dgInfoRec('chlorpromazine',['Tablets 25, 50, 100 mg','Syrup 25 mg/5 mL','Injection 25 mg/mL'],
+ ['Variable oral bioavailability (about 10–80%) because of first-pass metabolism','90–99%','Liver (CYP2D6, CYP1A2, CYP3A4); active metabolites','Urine and bile; metabolites persist for weeks','1–4 h oral','About 30 h'],
+ 'No fixed adjustment. Use caution in severe impairment and monitor blood pressure.','Avoid in severe liver disease (cholestatic jaundice has been reported). Use lower doses in mild–moderate impairment.',
+ 'Enters breast milk. Infant drowsiness has been reported. Use the lowest dose and monitor the infant, or choose an alternative.',
+ {more:['It makes skin very sensitive to sunlight. Use sunscreen and cover up in strong sun.','Give IM doses deeply, and keep the patient lying down for 30 minutes afterwards (blood pressure may drop).']});
+dgInfoRec('fluphenazine_dec',['Depot injection 25 mg/mL (1 mL ampoule and multi-dose vial)'],
+ ['Slow release from the oil depot; levels rise within 24–72 h','Over 90%','Hydrolysed to fluphenazine, then liver (CYP2D6)','Urine and faeces','Within about 1–2 days after IM','About 7–10 days after a single dose'],
+ 'No specific adjustment. Use the lowest effective dose and monitor.','Use the lowest dose. Avoid in severe hepatic impairment.',
+ 'Limited data. Fluphenazine enters breast milk. Monitor the infant for sedation or choose an alternative.');
+dgInfoRec('risperidone',['Tablets 0.5, 1, 2, 3, 4 mg','Orodispersible tablets 0.5–4 mg','Oral solution 1 mg/mL','Long-acting injection 25, 37.5, 50 mg'],
+ ['About 70% absorbed; not affected by food','About 90% (9-hydroxy-risperidone about 77%)','Liver CYP2D6 to 9-hydroxyrisperidone (active, same as paliperidone)','Urine about 70%, faeces about 14%','1–2 h','3 h parent; active moiety about 20 h'],
+ 'Severe impairment (CrCl below 30 mL/min): start 0.5 mg twice daily and titrate slowly.','Start 0.5 mg twice daily and titrate slowly in hepatic impairment.',
+ 'Low transfer into milk. Usually acceptable if needed. Monitor the infant for sedation and weight gain.',
+ {more:['Raised prolactin can cause breast enlargement, milk discharge and missed periods. Report these symptoms.']});
+dgInfoRec('olanzapine',['Tablets 2.5, 5, 7.5, 10, 15, 20 mg','Orodispersible tablets 5–20 mg','IM injection 10 mg vial','Pamoate depot injection (specialist)'],
+ ['About 60% reaches the circulation after first-pass metabolism; not affected by food','93%','Liver: glucuronidation and CYP1A2 (smoking induces CYP1A2)','Urine about 57%, faeces about 30%','5–8 h oral; 15–45 min IM','21–54 h (about 30 h typical)'],
+ 'No adjustment needed. Consider a lower starting dose in severe impairment.','Start at 5 mg and titrate cautiously. Monitor liver function.',
+ 'Low to moderate transfer into milk (about 1% of the maternal dose). Usually compatible. Monitor for sedation.',
+ {more:['Stopping or starting smoking changes olanzapine levels, so tell the prescriber.','Weight gain and high blood sugar are common. Weight, glucose and lipids are checked regularly.']});
+dgInfoRec('quetiapine',['Immediate-release tablets 25, 100, 150, 200, 300 mg','XR tablets 50, 150, 200, 300, 400 mg'],
+ ['Rapid; bioavailability close to 100% for immediate-release. XR peaks later and should not be taken with a heavy meal','83%','Liver CYP3A4 (active metabolite norquetiapine)','Urine about 73%, faeces about 20%','1.5 h immediate-release; 6 h XR','About 7 h (norquetiapine about 12 h)'],
+ 'No adjustment needed.','Start at 25 mg/day and increase by 25–50 mg/day.',
+ 'Low milk levels (under 1% of the maternal dose). Often a preferred choice. Monitor for sedation.',
+ {more:['Report dizziness on standing, rapid heartbeat or very blurred vision.','Cataracts can develop. Have your eyes checked as advised.']});
+dgInfoRec('aripiprazole',['Tablets 5, 10, 15, 30 mg (2 mg in some countries)','Orodispersible tablets','Oral solution 1 mg/mL','Long-acting injection 300 and 400 mg monthly'],
+ ['About 87% absorbed; not affected by food','Over 99%','Liver CYP2D6 and CYP3A4 (active metabolite dehydro-aripiprazole)','Faeces about 55%, urine about 25%','3–5 h','About 75 h (about 146 h in CYP2D6 poor metabolisers)'],
+ 'No adjustment needed.','No adjustment in mild–moderate impairment. Use caution in severe impairment.',
+ 'Can lower milk supply because it lowers prolactin. Limited data. Monitor the infant.',
+ {more:['It can cause restlessness (akathisia) rather than drowsiness. Report an urge to keep moving.']});
+dgInfoRec('clozapine',['Tablets 25 and 100 mg','Oral suspension 50 mg/mL'],
+ ['Well absorbed; about 50–60% reaches the circulation after first pass; not affected by food','About 97%','Liver CYP1A2 (main), CYP3A4, CYP2D6. Smoking lowers levels','Urine about 50%, faeces about 30%','1–6 h (about 2.5 h)','About 12 h at steady state (range 6–26 h)'],
+ 'Use a lower starting dose (12.5 mg) in mild–moderate impairment. Contraindicated in severe renal disease (UK labelling).','Contraindicated in active liver disease with jaundice or progressive liver disease or failure. Use lower doses in mild–moderate impairment.',
+ 'Avoid. It accumulates in breast milk, and sedation and agranulocytosis have been reported in infants.',
+ {stop:'Never stop suddenly. Taper over 1–2 weeks (longer if possible) and watch for relapse and cholinergic rebound (sweating, vomiting, diarrhoea, agitation). If doses are missed for more than 48 hours, restart at 12.5 mg and re-titrate.',
+  missed:'If more than 48 hours are missed, do not restart at the usual dose. Contact the prescriber to re-titrate from 12.5 mg.',
+  counsel:['Have blood tests as arranged. A white cell count is needed before every supply because the drug can lower white cells.','Report fever, sore throat, flu-like illness, mouth ulcers or any infection immediately.','Report chest pain, breathlessness or a fast heartbeat, especially in the first weeks (heart inflammation).','Tell the team if you start or stop smoking, or change your caffeine intake, because these change drug levels.','Increase fibre and fluids to prevent constipation, and report severe constipation or abdominal pain urgently.','Stand up slowly. Do not drive if drowsy, especially in the first weeks.']});
+dgInfoRec('amisulpride',['Tablets 50, 100, 200, 400 mg','Oral solution 100 mg/mL'],
+ ['About 48% bioavailable; two absorption peaks','About 17%','Minimal (about 4% of the dose)','Mostly renal, about 50% unchanged','About 1 h and 3–4 h','About 12 h'],
+ 'CrCl 30–60 mL/min: give half the dose. CrCl 10–30 mL/min: one third. Avoid if below 10.','No adjustment needed because there is little hepatic metabolism.',
+ 'Avoid. High relative infant doses have been reported.',
+ {more:['Report palpitations or fainting. It can prolong the QT interval, so an ECG is needed with higher doses or other QT-prolonging drugs.']});
+dgInfoRec('lurasidone',['Tablets 18.5, 37, 74 mg (UK) or 20, 40, 60, 80, 120 mg (US)'],
+ ['Bioavailability about 9–19%; absorption roughly doubles with a meal of at least 350 kcal','About 99%','Liver CYP3A4 (main). Avoid strong CYP3A4 inhibitors and inducers','Faeces about 80%, urine about 9%','1–3 h','About 18 h'],
+ 'Moderate–severe impairment: start 20 mg and do not exceed 80 mg/day.','Moderate–severe impairment: start 20 mg and do not exceed 80 mg/day (severe: max 40 mg).',
+ 'Limited data. Avoid unless the benefit outweighs the risk.',
+ {more:['Take it with a meal of at least 350 calories, or absorption falls sharply.','Avoid grapefruit juice.']});
+dgInfoRec('zuclopenthixol_dec',['Depot injection 200 mg/mL (1 mL) and 500 mg/mL'],
+ ['Slow release from the oil depot; peak at 3–7 days','About 98%','Liver CYP2D6 and CYP3A4','Mostly faeces; urine about 10%','3–7 days','About 19 days'],
+ 'No specific adjustment. Use the lowest dose.','Use the lowest dose. Avoid in severe hepatic impairment.',
+ 'Enters breast milk in small amounts. Monitor the infant for sedation or choose an alternative.');
+
+/* ── mood stabilisers and antiepileptics ── */
+dgInfoRec('lithium',['Lithium carbonate tablets 200, 250, 400 mg (and 450 mg MR in some countries)','Lithium citrate liquid 520 mg/5 mL','Brands differ in bioavailability: do not switch brand without a level check'],
+ ['Rapid and almost complete; peaks sooner with liquid or immediate-release than modified-release','Not protein-bound','Not metabolised','Almost entirely renal (about 95%); competes with sodium reabsorption','0.5–3 h immediate-release; 4–12 h modified-release','About 18–36 h (longer in the elderly and in renal impairment)'],
+ 'Avoid in severe impairment (eGFR below 30). Reduce the dose and check levels more often in mild–moderate impairment.','No hepatic metabolism, so no adjustment is needed.',
+ 'Avoid, or use only with specialist advice and infant blood-level monitoring. Infant levels reach about 10–50% of the mother’s, with a risk of toxicity and dehydration.');
+dgInfoRec('valproate',['Gastro-resistant tablets 200, 500 mg','Modified-release tablets 300, 500 mg','Syrup 200 mg/5 mL','IV injection 400 mg'],
+ ['Nearly complete (90–100%); delayed by food or enteric coating','80–94% (saturable, so free fraction rises at high doses)','Liver: glucuronidation, β-oxidation, CYP2C9/2C19. Inhibits glucuronidation of lamotrigine','Urine as glucuronide (about 30–50%)','1–4 h immediate-release; 3–8 h modified-release','9–16 h'],
+ 'Free fraction rises in severe impairment. Consider a lower dose and monitor free levels if possible.','Contraindicated in active liver disease or a family history of severe hepatic dysfunction (risk of fatal hepatotoxicity).',
+ 'Small amounts in milk. Generally compatible. Monitor the infant for jaundice and bruising. Valproate harms unborn babies, so contraception is essential.');
+dgInfoRec('carbamazepine',['Tablets 100, 200, 400 mg','Modified-release tablets 200, 400 mg','Liquid 100 mg/5 mL','Suppositories 125 and 250 mg'],
+ ['Slow and variable (about 75–85%); food increases the rate','About 75%','Liver CYP3A4 to an active epoxide. It induces its own metabolism over 2–4 weeks and strongly induces CYP3A4, 1A2 and UGT','Urine about 72%, faeces about 28%','4–8 h immediate-release; 3–12 h modified-release','25–65 h at first; 12–17 h after auto-induction'],
+ 'Use caution. Monitor sodium and levels.','Use caution and monitor liver function. Contraindicated in acute porphyria.',
+ 'Low to moderate milk levels. Monitor the infant for sedation, poor feeding, jaundice and rash.',
+ {more:['It makes many medicines and the contraceptive pill less effective. Ask about contraception.','Avoid grapefruit juice and alcohol. Blood tests are done as arranged.']});
+dgInfoRec('lamotrigine',['Tablets 25, 50, 100, 200 mg','Dispersible tablets 2, 5, 25, 100 mg'],
+ ['Rapid and complete (about 98%)','About 55%','Liver: glucuronidation (UGT1A4). Valproate doubles the half-life; enzyme inducers halve it; oestrogen lowers levels','Urine about 94% (mostly glucuronides)','1.5–4 h','About 25–33 h alone; about 70 h with valproate; about 14 h with inducers'],
+ 'Use caution. Lower maintenance doses may be effective in severe impairment.','Reduce initial, escalation and maintenance doses by about 25% in moderate–severe impairment (about 50% in severe impairment with ascites).',
+ 'Significant milk levels (about 20–40% of maternal levels). Monitor the infant for rash, sedation, poor feeding and apnoea.',
+ {stop:'Taper over at least 2 weeks. If more than 5 half-lives (about 5 days) are missed, restart from the beginning of the titration schedule.',
+  missed:'If more than 5 days are missed, do not restart at the usual dose. Contact the prescriber to restart the titration.',
+  counsel:['Stop the tablets and get urgent help for any new rash, fever, blistering or mouth ulcers. Serious rashes can occur, mostly in the first 8 weeks.','Never increase the dose faster than prescribed. Tell the prescriber if you start or stop valproate, carbamazepine or the contraceptive pill.','It may cause dizziness, double vision and headache.','Oestrogen contraceptives can lower lamotrigine levels.']});
+
+/* ── antidepressants ── */
+dgInfoRec('fluoxetine',['Capsules 10, 20, 40 mg','Tablets 20, 60 mg (varies by country)','Liquid 20 mg/5 mL'],
+ ['Well absorbed (over 70%); food delays but does not reduce it','About 94–95%','Liver CYP2D6 to norfluoxetine (active). Strong CYP2D6 and moderate CYP2C19 inhibitor','Urine about 60%, faeces about 15%','6–8 h','1–4 days; norfluoxetine 7–15 days'],
+ 'No adjustment needed in mild–moderate impairment. Use caution in severe impairment.','Use lower or less frequent doses in cirrhosis (for example 20 mg every other day).',
+ 'Highest milk levels of the SSRIs and a long half-life. Monitor the infant. Sertraline or paroxetine is usually preferred.',
+ {stop:'The long half-life makes withdrawal milder, but taper if the dose is high or it has been taken for a long time.'});
+dgInfoRec('sertraline',['Tablets 25, 50, 100 mg','Oral concentrate 20 mg/mL (US)'],
+ ['Well absorbed; food raises the peak slightly','About 98–99%','Liver (CYP2B6, 2C19, 2C9, 3A4, 2D6) to weakly active desmethylsertraline','Urine about 40–45%, faeces about 40–45%','4.5–8.4 h','About 26 h (desmethylsertraline 62–104 h)'],
+ 'No adjustment needed in mild–moderate impairment. Use caution in severe impairment.','Mild: use half the dose or dose less often. Avoid in moderate–severe impairment.',
+ 'Low milk levels. Generally the preferred SSRI in breastfeeding.');
+dgInfoRec('escitalopram',['Tablets 5, 10, 20 mg','Oral drops 20 mg/mL'],
+ ['About 80%; not affected by food','About 56%','Liver CYP2C19 (main), CYP3A4, CYP2D6','Mostly metabolites in urine','About 4–5 h','About 27–32 h'],
+ 'No adjustment in mild–moderate impairment. Use caution in severe impairment (CrCl below 20 mL/min).','Maximum 10 mg/day.',
+ 'Moderate milk levels. Monitor the infant for sedation and poor feeding.',
+ {more:['Report palpitations or fainting. Higher doses can prolong the QT interval.']});
+dgInfoRec('citalopram',['Tablets 10, 20, 40 mg','Oral drops 40 mg/mL'],
+ ['About 80%; no food effect','About 80%','Liver CYP2C19, CYP3A4, CYP2D6','Urine about 20% unchanged; faeces about 10%','About 4 h','About 35 h'],
+ 'No adjustment in mild–moderate impairment. Use caution in severe impairment.','Maximum 20 mg/day.',
+ 'Moderate milk levels. Monitor the infant for sedation and poor feeding.',
+ {more:['Do not exceed 40 mg/day (20 mg over 65 years). Higher doses prolong the QT interval: report palpitations or fainting.']});
+dgInfoRec('paroxetine',['Tablets 10, 20, 30, 40 mg','Liquid 10 mg/5 mL'],
+ ['Well absorbed with saturable first-pass metabolism','About 95%','Liver CYP2D6 (saturable). Strong CYP2D6 inhibitor. Inactive metabolites','Urine about 64%, faeces about 36%','About 5 h','About 21 h'],
+ 'CrCl below 30 mL/min: start 10 mg and do not exceed 40 mg.','Start 10 mg and do not exceed 40 mg in severe impairment.',
+ 'Low milk levels. Generally acceptable in breastfeeding.',
+ {stop:'The short half-life makes withdrawal symptoms common and sometimes severe. Reduce in small steps over several weeks or longer.'});
+dgInfoRec('fluvoxamine',['Tablets 50 and 100 mg (25 mg in some countries)'],
+ ['About 94%; not affected by food','About 80%','Liver (oxidation by CYP2D6 and CYP1A2). Strong CYP1A2 and CYP2C19 inhibitor, moderate CYP3A4','Urine about 94% as metabolites','3–8 h','About 15 h'],
+ 'No formal adjustment. Start low and titrate slowly.','Start low and titrate slowly. Monitor liver function.',
+ 'Limited data. Low levels reported. Monitor the infant.',
+ {more:['It raises levels of caffeine, clozapine, olanzapine, theophylline and melatonin. Tell the team about these.']});
+dgInfoRec('venlafaxine',['IR tablets 37.5, 75 mg','XR capsules 37.5, 75, 150, 225 mg'],
+ ['About 45% bioavailable; food has little effect','About 27–30%','Liver CYP2D6 to O-desmethylvenlafaxine (active)','Urine about 87%','2 h IR; 5.5–9 h XR','About 5 h (O-desmethylvenlafaxine about 11 h)'],
+ 'Mild–moderate impairment: reduce the daily dose by about 25%. Haemodialysis: reduce by about 50%.','Mild–moderate impairment: reduce the dose by about 50%. Severe impairment: individualise.',
+ 'Moderate milk levels (relative infant dose about 6–9%). Monitor the infant.');
+dgInfoRec('duloxetine',['Capsules 30 and 60 mg (20 and 40 mg in some countries)'],
+ ['At least 90% absorbed; food delays the peak by about 4 h','About 90%','Liver CYP1A2 and CYP2D6. Moderate CYP2D6 inhibitor','Urine about 70%, faeces about 20%','About 6 h','About 12 h'],
+ 'Avoid if CrCl is below 30 mL/min.','Avoid in chronic liver disease or cirrhosis.',
+ 'Low milk levels. Limited data.');
+dgInfoRec('mirtazapine',['Tablets 15, 30, 45 mg','Orodispersible tablets','Oral solution 15 mg/mL'],
+ ['About 50% bioavailable; food has little effect','About 85%','Liver CYP2D6, CYP1A2, CYP3A4','Urine about 75%, faeces about 15%','About 2 h','20–40 h (longer in women and the elderly)'],
+ 'Clearance falls by about 30% (CrCl 11–39 mL/min) and about 50% (below 10). Reduce the dose or use caution.','Clearance is reduced by about 30%. Use caution.',
+ 'Low milk levels. Generally acceptable. Monitor the infant for sedation.',
+ {more:['It often causes drowsiness and increased appetite with weight gain. Take it at night.']});
+dgInfoRec('bupropion',['SR tablets 150 mg (100 and 200 mg in some countries)','XL tablets 150, 300 mg (US)'],
+ ['Rapid; SR peaks at about 3 h','About 84%','Liver CYP2B6 to active hydroxybupropion. Strong CYP2D6 inhibitor','Urine about 87%, faeces about 10%','About 3 h SR; about 5 h XL','About 21 h (hydroxybupropion about 20 h)'],
+ 'Reduce the dose; do not exceed 150 mg once daily in significant renal impairment.','Severe cirrhosis: do not exceed 150 mg every other day. Mild–moderate: use caution or lower doses.',
+ 'Present in milk. One case of infant seizure has been reported. Use only if essential and monitor the infant.',
+ {stop:'At standard doses it can usually be stopped without tapering. Reduce gradually if on higher doses.',
+  more:['Do not take it if you have epilepsy or an eating disorder, or if you are suddenly stopping alcohol or benzodiazepines (seizure risk).','Take the second SR dose at least 8 hours after the first, and not near bedtime.']});
+dgInfoRec('trazodone',['Capsules 50, 100 mg','Tablets 150 mg','Liquid 50 mg/5 mL'],
+ ['Well absorbed; food increases the peak and delays it','About 90–95%','Liver CYP3A4 to mCPP (active)','Urine about 70–75%, faeces about 21%','1–2 h','About 5–9 h'],
+ 'No adjustment in mild–moderate impairment. Use caution in severe impairment.','Use caution. Reduce the dose in severe impairment.',
+ 'Low milk levels. Monitor the infant for drowsiness.',
+ {more:['It can cause dizziness on standing. A rare painful prolonged erection (priapism) needs urgent medical help.']});
+dgInfoRec('amitriptyline',['Tablets 10, 25, 50 mg','Oral solution 25 mg/5 mL and 50 mg/5 mL'],
+ ['Well absorbed; bioavailability about 30–60% after first-pass','About 95%','Liver CYP2C19 (to nortriptyline) and CYP2D6','Urine about 25–50% as metabolites; some faeces','2–12 h (about 4 h)','10–28 h (nortriptyline 18–44 h)'],
+ 'No adjustment is generally needed. Start low in the elderly.','Reduce the dose and start low.',
+ 'Low milk levels. Generally compatible (nortriptyline is the preferred TCA). Monitor for sedation.');
+dgInfoRec('clomipramine',['Capsules 10, 25, 50 mg (75 mg in some countries)','SR tablets 75 mg'],
+ ['Well absorbed; first-pass metabolism reduces availability to about 50%','About 97–98%','Liver CYP2D6, CYP1A2, CYP2C19, CYP3A4 to desmethylclomipramine (active)','Urine about 60%, faeces about 32%','2–6 h','About 32 h (desmethylclomipramine about 69 h)'],
+ 'No adjustment is generally needed. Start low in the elderly.','Reduce the dose and start low.',
+ 'Low milk levels. Monitor the infant.');
+dgInfoRec('imipramine',['Tablets 10, 25 mg (50 mg in some countries)'],
+ ['Well absorbed; bioavailability about 40–50%','About 90%','Liver CYP2C19, CYP1A2, CYP3A4 to desipramine (active); CYP2D6 hydroxylation','Urine about 80%','2–6 h','About 8–28 h (desipramine about 22 h)'],
+ 'No adjustment is generally needed. Start low in the elderly.','Reduce the dose and start low.',
+ 'Low milk levels. Generally compatible.');
+dgInfoRec('nortriptyline',['Tablets 10 and 25 mg','Capsules 10, 25, 50, 75 mg (US)','Oral solution 10 mg/5 mL'],
+ ['Well absorbed; bioavailability about 50% (first-pass)','About 92%','Liver CYP2D6 (10-hydroxylation). Plasma levels vary widely','Urine as metabolites (about 2% unchanged)','7–8.5 h','About 18–44 h'],
+ 'No adjustment is generally needed. Start low in the elderly.','Reduce the dose and start low.',
+ 'The preferred TCA in breastfeeding. Infant levels are low.',
+ {more:['Plasma levels may be checked (target about 50–150 ng/mL).']});
+dgInfoRec('phenelzine',['Tablets 15 mg'],
+ ['Rapid absorption','Not well established','Liver (oxidation and acetylation)','Urine as metabolites','About 2–3 h','About 1.5–4 h, but the effect lasts about 2–3 weeks (irreversible MAO inhibition)'],
+ 'Use caution. Limited data.','Contraindicated in liver disease or abnormal liver function.',
+ 'Avoid. No safety data.');
+
+/* ── benzodiazepines, hypnotics, anxiolytics ── */
+dgInfoRec('diazepam',['Tablets 2, 5, 10 mg','Oral solution 2 mg/5 mL','Injection 10 mg/2 mL','Rectal tubes 5 and 10 mg'],
+ ['Rapid and almost complete orally; rectal absorption is fast','About 98–99%','Liver CYP2C19 and CYP3A4 to active metabolites (desmethyldiazepam, temazepam, oxazepam)','Urine about 70% as glucuronides','0.5–2 h oral; 10–30 min rectal','20–100 h (desmethyldiazepam 36–200 h)'],
+ 'Use lower doses. Active metabolites can accumulate.','Reduce the dose because the half-life is prolonged. Avoid in severe impairment or hepatic encephalopathy.',
+ 'It accumulates in the infant because of the long half-life. Avoid repeated doses. A single dose is acceptable. Monitor for sedation.');
+dgInfoRec('lorazepam',['Tablets 0.5, 1, 2 mg','Injection 4 mg/mL','Oral solution 2 mg/mL (US)'],
+ ['Well absorbed orally (about 90%)','About 85–91%','Liver: glucuronidation only (no active metabolites; not affected by CYP)','Urine about 88% as glucuronide','About 2 h oral; 60–90 min IM','10–20 h'],
+ 'Use caution. The glucuronide is inactive but can accumulate.','Safer than diazepam because glucuronidation is preserved. Use caution.',
+ 'The preferred benzodiazepine in breastfeeding. Low milk levels. Short-term use only. Watch for sedation.');
+dgInfoRec('clonazepam',['Tablets 0.5 and 2 mg (1 mg in some countries)','Orodispersible tablets','Oral drops 2.5 mg/mL','Injection 1 mg/mL'],
+ ['About 90% orally','About 85%','Liver CYP3A4 (nitroreduction) to inactive metabolites','Urine about 50–70%, faeces 10–30%','1–4 h','30–40 h'],
+ 'Use caution in severe impairment. Start low.','Contraindicated in severe liver disease.',
+ 'Limited data. Monitor the infant for sedation and poor feeding.');
+dgInfoRec('alprazolam',['Tablets 0.25, 0.5, 1, 2 mg','XR tablets (US)'],
+ ['Well absorbed (about 90%)','About 80%','Liver CYP3A4 to α-hydroxyalprazolam (active)','Urine as metabolites','1–2 h','About 11 h (range 6–27 h)'],
+ 'Use caution. Start low.','Advanced liver disease: start 0.25 mg two to three times daily.',
+ 'Short-term use is acceptable. Monitor the infant for sedation, and for withdrawal if stopped abruptly.');
+dgInfoRec('zopiclone',['Tablets 3.75 and 7.5 mg'],
+ ['Rapid; bioavailability about 75–80%','About 45–80%','Liver CYP3A4 and CYP2C8 (N-oxide is active)','Urine about 80% as metabolites; some in saliva (bitter taste)','About 1.5–2 h','About 5 h (about 7 h in the elderly)'],
+ 'Start at 3.75 mg in renal impairment.','Start at 3.75 mg in hepatic impairment.',
+ 'Present in milk (about 12% of maternal levels). Avoid, or use briefly.');
+dgInfoRec('zolpidem',['Tablets 5 and 10 mg','Sublingual tablets 1.75 and 3.5 mg'],
+ ['Rapid; about 70% bioavailable; food delays the onset and lowers the peak','About 92%','Liver CYP3A4 (main), CYP2C9, CYP1A2 to inactive metabolites','Urine about 56%, faeces about 34%','About 1.6 h','About 2.5 h (longer in the elderly and hepatic impairment)'],
+ 'No adjustment needed. Monitor.','Maximum 5 mg in mild–moderate impairment. Avoid in severe impairment.',
+ 'Low milk levels. Single short-term doses are acceptable. Monitor the infant.');
+dgInfoRec('eszopiclone',['Tablets 1, 2, 3 mg'],
+ ['Rapid; a high-fat meal slows the onset','About 52–59%','Liver CYP3A4 and CYP2E1','Urine about 75% as metabolites','About 1 h','About 6 h (about 9 h in the elderly)'],
+ 'No adjustment needed.','Severe impairment: do not exceed 2 mg (start 1 mg).',
+ 'Limited data. Avoid, or use single doses.');
+dgInfoRec('suvorexant',['Tablets 5, 10, 15, 20 mg'],
+ ['Bioavailability about 82%; a high-fat meal delays the peak','Over 99%','Liver CYP3A4 (main)','Faeces about 66%, urine about 23%','About 2 h','About 12 h'],
+ 'No adjustment needed.','Mild–moderate impairment: no adjustment. Severe impairment: not studied.',
+ 'No data. Avoid.',
+ {more:['Take it within 30 minutes of bedtime with at least 7 hours available for sleep. Avoid with strong CYP3A4 inhibitors.']});
+dgInfoRec('melatonin',['Prolonged-release tablets 2 mg (UK licence)','Immediate-release liquid or tablets (strengths vary)'],
+ ['Rapid; bioavailability about 15% (first-pass)','About 60%','Liver CYP1A2 (6-hydroxylation). Fluvoxamine raises levels markedly','Urine about 85–90% as 6-sulfatoxymelatonin','About 45 min IR; about 1.6 h prolonged-release','About 45 min IR; 3.5–4 h prolonged-release'],
+ 'No adjustment needed. Limited data.','Clearance is reduced. Avoid in significant impairment.',
+ 'Present in milk. Limited data. Short-term use only.');
+dgInfoRec('buspirone',['Tablets 5 and 10 mg (also 7.5, 15, 30 mg in some countries)'],
+ ['Well absorbed, but only about 4% reaches the circulation (first-pass)','About 95%','Liver CYP3A4 (active metabolite 1-PP)','Urine about 29–63%, faeces about 18–38%','40–90 min','About 2–3 h'],
+ 'Avoid in severe renal impairment (CrCl below 10). Use caution in mild–moderate.','Avoid in severe hepatic impairment. Use caution in mild–moderate.',
+ 'Unknown. Avoid unless essential.');
+dgInfoRec('hydroxyzine',['Tablets 10, 25, 50 mg','Syrup 10 mg/5 mL'],
+ ['Rapid oral absorption','About 93%','Liver CYP3A4/5 to cetirizine (active)','Urine, mostly as cetirizine and metabolites','About 2 h','About 14–20 h in adults (about 7 h in children; longer in the elderly)'],
+ 'Reduce the dose by about half in moderate–severe impairment (GFR below 50).','Reduce the daily dose by about one third because of the prolonged half-life.',
+ 'Avoid. Unknown milk levels, and infant sedation is possible.',
+ {more:['Report palpitations or fainting. It can prolong the QT interval.']});
+dgInfoRec('promethazine',['Tablets 10 and 25 mg','Elixir 5 mg/5 mL','Injection 25 mg/mL'],
+ ['Well absorbed; about 25% bioavailable (first-pass)','About 93%','Liver CYP2D6 (sulfoxide and N-desmethyl metabolites)','Urine and faeces as metabolites','2–3 h oral','About 10–19 h'],
+ 'Use caution and reduce the dose.','Avoid in severe impairment (may precipitate encephalopathy).',
+ 'May reduce milk supply and sedate the infant. Avoid, or use short term.',
+ {more:['Never give to children under 2 years. It can cause fatal breathing depression.','IM injection must be deep. Avoid intravenous or subcutaneous use, which can cause severe tissue injury.']});
+dgInfoRec('diphenhydramine',['Capsules and tablets 25 and 50 mg','Elixir 12.5 mg/5 mL','Injection 50 mg/mL'],
+ ['About 40–60% bioavailable (first-pass)','About 98%','Liver CYP2D6 (and others). Inhibits CYP2D6','Urine about 90% as metabolites','1–4 h','About 4–9 h (up to 13 h in the elderly)'],
+ 'In GFR below 50, extend the interval to every 6–8 h; in GFR below 10, every 12–18 h.','Use caution. A lower dose may be needed.',
+ 'Occasional single doses are acceptable. Avoid long-term use (infant sedation and reduced milk).',
+ {more:['Avoid in older adults because of confusion, falls and urinary retention.']});
+
+/* ── movement-disorder drugs, beta-blocker, alpha drugs ── */
+dgInfoRec('trihexyphenidyl',['Tablets 2 and 5 mg','Elixir 2 mg/5 mL'],
+ ['Rapid oral absorption','Not well established','Liver (hydroxylation)','Urine as metabolites','About 1 h','About 3.5–4 h'],
+ 'Use caution; it can cause urinary retention.','Use caution; metabolised in the liver.',
+ 'May inhibit lactation. Limited data. Use with caution.');
+dgInfoRec('procyclidine',['Tablets 5 mg','Injection 10 mg/2 mL'],
+ ['Well absorbed orally; IM and IV act within minutes','Not well established','Liver','Urine as metabolites','1–2 h oral','About 12 h'],
+ 'Use caution; it can cause urinary retention.','Use caution.',
+ 'May inhibit lactation. Limited data. Use with caution.');
+dgInfoRec('benztropine',['Tablets 0.5, 1, 2 mg','Injection 1 mg/mL (2 mL)'],
+ ['Well absorbed orally; IM and IV act within minutes','Not well established','Liver (N-oxidation and hydroxylation)','Urine as metabolites','About 1–2 h oral','Not well established'],
+ 'Use caution; it can cause urinary retention.','Use caution.',
+ 'May inhibit lactation. Limited data. Use with caution.');
+dgInfoRec('propranolol',['Tablets 10, 40, 80, 160 mg','Modified-release capsules 80, 160 mg','Oral solution 5 mg/5 mL'],
+ ['Almost complete, but extensive first-pass metabolism leaves a bioavailability of about 25%','About 90%','Liver CYP2D6 (4-hydroxylation), CYP1A2, glucuronidation','Urine over 90% as metabolites','1–4 h','3–6 h'],
+ 'No adjustment is generally needed. Monitor in severe impairment.','Reduce the dose and monitor. Bioavailability rises markedly in cirrhosis.',
+ 'Low milk levels. Considered compatible. Monitor the infant for a slow heart rate and low blood sugar.');
+dgInfoRec('prazosin',['Tablets 0.5, 1, 2, 5 mg (UK)','Capsules 1, 2, 5 mg (US)'],
+ ['Bioavailability about 50–85%','About 97%','Liver (demethylation and conjugation)','Mostly bile and faeces; urine about 10%','1–3 h','2–3 h (the effect lasts longer)'],
+ 'Start with 1 mg and titrate cautiously.','Use caution and a lower starting dose.',
+ 'Low levels. Limited data. Monitor the infant.');
+dgInfoRec('clonidine',['Tablets 25 and 100 micrograms','Extended-release tablets 0.1 mg (ADHD, US)','Injection 150 micrograms/mL'],
+ ['Almost complete orally (about 75–95%)','About 20–40%','Liver (about 50%)','Urine about 65% (about 40–60% unchanged)','1–3 h','About 12–16 h (longer in renal impairment)'],
+ 'Reduce the dose and titrate slowly because about half is cleared by the kidney.','Use caution.',
+ 'Present in milk and may reduce milk supply. Monitor the infant for sedation.');
+dgInfoRec('guanfacine',['Extended-release tablets 1, 2, 3, 4 mg'],
+ ['Extended-release bioavailability about 58%; a high-fat meal increases exposure','About 70%','Liver CYP3A4/5. Avoid grapefruit and strong CYP3A4 inhibitors','Urine about 80% (mostly metabolites)','About 5 h (extended-release)','About 18 h'],
+ 'Moderate–severe impairment: lower doses may be needed. Dialysis: reduce by about 50%.','Use caution. Lower doses may be needed in severe impairment.',
+ 'No data. Avoid unless essential.');
+
+/* ── ADHD and wake-promoting ── */
+dgInfoRec('methylphenidate',['Immediate-release tablets 5, 10, 20 mg','Extended-release tablets (Concerta XL 18, 27, 36, 54 mg)','Modified-release capsules (for example 10–60 mg)'],
+ ['Rapid; about 30% bioavailable (first-pass)','10–33%','Liver de-esterification by carboxylesterase 1 to ritalinic acid (inactive); little CYP','Urine about 78–97%, mostly ritalinic acid','1–2 h IR; 6–8 h extended-release','About 2–3 h (IR)'],
+ 'No adjustment needed (the metabolites are inactive).','Use caution. Limited data.',
+ 'Low milk levels. Acceptable with monitoring. Take the dose after a feed.');
+dgInfoRec('amphetamine',['Dexamfetamine tablets 5 and 10 mg','Oral solution 5 mg/5 mL','Mixed amphetamine salts (US) 5–30 mg tablets and XR capsules'],
+ ['Well absorbed; food does not change the extent','About 16–20%','Liver CYP2D6 and other routes. Urine pH affects excretion','Urine about 30–40% unchanged (more in acidic urine)','About 3 h (IR)','About 10–12 h'],
+ 'Use caution and lower doses because clearance is reduced.','Use caution.',
+ 'Passes into milk (relative infant dose up to about 10% or more). Avoid, or monitor the infant closely.');
+dgInfoRec('lisdexamfetamine',['Capsules 20, 30, 40, 50, 60, 70 mg','Chewable tablets (US)'],
+ ['Prodrug absorbed by peptide transporters, then hydrolysed in red blood cells to dextroamphetamine','Under 20% (dextroamphetamine)','Red cell hydrolysis (not CYP). Dextroamphetamine is then metabolised in the liver','Urine about 96%','About 1 h (prodrug); dextroamphetamine 3.5–4 h','Prodrug under 1 h; dextroamphetamine about 10–12 h'],
+ 'CrCl below 30: maximum 50 mg. End-stage disease: maximum 30 mg.','No adjustment needed because activation is by blood hydrolysis.',
+ 'Passes into milk. Avoid, or monitor the infant closely.');
+dgInfoRec('modafinil',['Tablets 100 and 200 mg'],
+ ['Well absorbed; food delays the peak','About 60%','Liver (amide hydrolysis, CYP3A4). Induces CYP3A4/CYP2B6 and inhibits CYP2C19','Urine about 80% as metabolites','2–4 h','About 12–15 h'],
+ 'Limited data. Use caution.','Severe impairment: halve the dose.',
+ 'No data. Avoid.');
+dgInfoRec('atomoxetine',['Capsules 10, 18, 25, 40, 60, 80, 100 mg','Oral solution 4 mg/mL (UK)'],
+ ['Rapid; bioavailability 63% in extensive metabolisers and 94% in poor metabolisers','About 98%','Liver CYP2D6 (to 4-hydroxyatomoxetine). Poor metabolisers have much higher exposure','Urine about 80%, faeces about 17%','1–2 h','About 5 h (about 21 h in CYP2D6 poor metabolisers)'],
+ 'No dose adjustment. Monitor blood pressure in end-stage renal disease.','Moderate impairment: reduce initial and target doses to 50%. Severe: reduce to 25%.',
+ 'No data. Avoid unless the benefit outweighs the risk.');
+
+/* ── addiction medicines ── */
+dgInfoRec('naltrexone',['Tablets 50 mg','Extended-release IM injection 380 mg monthly (US)'],
+ ['Over 95% absorbed, but heavy first-pass metabolism leaves 5–40%','About 21%','Liver (dihydrodiol dehydrogenase) to 6-β-naltrexol (active); not CYP','Urine, mostly as metabolites','About 1 h','4 h (6-β-naltrexol about 13 h)'],
+ 'Mild: no adjustment. Moderate–severe: not studied, use caution.','Contraindicated in acute hepatitis or hepatic failure. Monitor liver function.',
+ 'Limited data. Low milk levels expected. Monitor the infant.');
+dgInfoRec('acamprosate',['Gastro-resistant tablets 333 mg'],
+ ['Poor oral absorption (bioavailability about 11%); food reduces it','Not protein-bound','Not metabolised','Urine, unchanged','About 3–8 h','About 20–33 h'],
+ 'CrCl 30–50 mL/min: 333 mg three times daily. Contraindicated if CrCl is below 30.','Contraindicated in severe hepatic failure (Child-Pugh C). No adjustment in mild–moderate impairment.',
+ 'Avoid. Present in animal milk, with no human data.');
+dgInfoRec('disulfiram',['Tablets 200 mg','Dispersible tablets 200 mg'],
+ ['About 80–95% absorbed','Not well defined','Liver: rapidly reduced to diethyldithiocarbamate (inhibits aldehyde dehydrogenase)','Urine and breath','About 8–12 h to full effect','The effect lasts up to 1–2 weeks after the last dose'],
+ 'Use caution.','Contraindicated in severe liver disease. Hepatotoxicity has been reported.',
+ 'Avoid. Unknown milk levels.');
+dgInfoRec('thiamine',['Tablets 50 and 100 mg','Injection 100 mg/mL','High-potency IV vitamin B complex (Pabrinex): paired ampoules'],
+ ['Active transport in the small intestine, which is saturable and impaired in alcohol dependence. IV and IM avoid this','Mostly phosphorylated within cells','Converted to thiamine pyrophosphate (active) in tissues','Urine (excess excreted unchanged)','About 1–2 h oral','Plasma levels fall within hours; body stores last about 2–3 weeks'],
+ 'No adjustment needed.','No adjustment needed.',
+ 'Safe. Thiamine is a normal part of milk and is needed in the diet.');
+dgInfoRec('buprenorphine',['Sublingual tablets 0.4, 2, 8 mg','Buprenorphine with naloxone sublingual tablets or film 2/0.5 and 8/2 mg','Weekly or monthly depot injections (Buvidal, Sublocade)'],
+ ['Poor oral absorption, so given sublingually (bioavailability about 30–50%) or by injection','About 96%','Liver CYP3A4 to norbuprenorphine (active), then glucuronidation','Faeces about 70%, urine about 30%','0.5–1.5 h sublingual','About 24–42 h'],
+ 'No adjustment needed.','Moderate impairment: use caution. Avoid the naloxone combination in severe impairment.',
+ 'Considered compatible. Low milk levels and minimal infant exposure. Monitor for sedation.');
+dgInfoRec('methadone',['Oral solution 1 mg/mL','Tablets 5 mg (some countries 10 mg)'],
+ ['Good oral bioavailability (about 80%, variable)','About 85–90%','Liver CYP3A4, CYP2B6, CYP2C19, CYP2D6. Many interactions','Urine and faeces as metabolites. Urine pH affects clearance','1–7.5 h','8–59 h (accumulates in the first week)'],
+ 'Use lower doses and longer intervals in severe impairment (GFR below 10).','Use caution and reduce the dose because it accumulates in severe impairment.',
+ 'Compatible with monitoring. The infant may show sedation. Stop gradually to avoid neonatal withdrawal.');
+dgInfoRec('naloxone',['Injection 0.4 mg/mL','Prefilled syringe 2 mg/2 mL','Intranasal spray 4 mg'],
+ ['Poor oral absorption (first-pass), so given IV, IM, SC or intranasally. Intranasal bioavailability about 40–50%','About 45%','Liver glucuronidation to naloxone-3-glucuronide','Urine about 25–40% within 6 h; the rest over days','IV within minutes; IM and intranasal levels peak at about 15 min','About 1–1.5 h'],
+ 'No adjustment needed.','No adjustment needed.',
+ 'Poorly absorbed orally. Compatible.');
+dgInfoRec('varenicline',['Tablets 0.5 and 1 mg','Starter pack'],
+ ['Almost complete (about 90%); food has no effect','Under 20%','Minimal (under 10%)','Urine about 92% unchanged (filtration and secretion)','3–4 h','About 24 h'],
+ 'Severe impairment (CrCl below 30): start 0.5 mg once daily and do not exceed 0.5 mg twice daily. Haemodialysis: maximum 0.5 mg daily.','No adjustment needed.',
+ 'Avoid. Present in animal milk, with no human data.');
+dgInfoRec('nrt',['Patches 7, 14, 21 mg/24 h (and 5, 10, 15 mg/16 h)','Gum 2 and 4 mg','Lozenge 1, 1.5, 2, 4 mg','Inhalator 15 mg cartridge','Mouth spray 1 mg/spray'],
+ ['Patch: steady delivery over 16–24 h. Gum, lozenge, inhaler and spray are absorbed through the mouth with faster peaks (about 20–30 min)','Under 5%','Liver CYP2A6 to cotinine','Urine (about 10–15% unchanged)','Patch 2–12 h; gum and lozenge about 30 min','Nicotine about 1–2 h (cotinine 16–20 h)'],
+ 'No adjustment needed. Use caution in severe impairment.','Use caution in severe impairment.',
+ 'Nicotine passes into milk, but NRT is safer than smoking. Prefer the patch, and feed before or soon after short-acting forms.');
+
+/* ── dementia drugs ── */
+dgInfoRec('donepezil',['Tablets 5 and 10 mg','Orodispersible tablets','23 mg tablets (US, specialist)'],
+ ['About 100%; not affected by food','About 96%','Liver CYP2D6 and CYP3A4 (active metabolite 6-O-desmethyl)','Urine about 57% (17% unchanged)','3–4 h','About 70 h'],
+ 'No adjustment needed.','Mild–moderate impairment: titrate cautiously. Severe: not studied.',
+ 'Not used in breastfeeding. The indication is in older adults.');
+dgInfoRec('galantamine',['Tablets 4, 8, 12 mg','Extended-release capsules 8, 16, 24 mg','Oral solution 4 mg/mL'],
+ ['Rapid; about 90% bioavailable; food slows the peak','About 18%','Liver CYP2D6 and CYP3A4','Urine about 95% (about 20% unchanged)','About 1 h IR; 4.5–5 h ER','About 7 h'],
+ 'Moderate impairment: maximum 16 mg/day. Avoid if CrCl is below 9 mL/min.','Moderate impairment: maximum 16 mg/day. Avoid in severe impairment.',
+ 'Not used in breastfeeding. The indication is in older adults.');
+dgInfoRec('rivastigmine',['Capsules 1.5, 3, 4.5, 6 mg','Oral solution 2 mg/mL','Patches 4.6, 9.5, 13.3 mg/24 h'],
+ ['Oral about 40% (dose-dependent); patch about 50% bioavailability','About 40%','Hydrolysed by cholinesterases (not CYP) to a decarbamylated metabolite','Urine about 97% as metabolites','About 1 h oral; 8–16 h patch','About 1.5 h in plasma (the effect lasts about 10 h)'],
+ 'No adjustment needed. Titrate by tolerance.','Mild–moderate impairment: titrate cautiously. Severe: not studied.',
+ 'Not used in breastfeeding. The indication is in older adults.');
+dgInfoRec('memantine',['Tablets 10 and 20 mg','Oral solution 10 mg/mL','Extended-release capsules (US)'],
+ ['About 100%; not affected by food','About 45%','Little metabolism (about 20%, not CYP)','Urine about 80% unchanged. Alkaline urine reduces clearance','3–7 h','60–80 h'],
+ 'CrCl 30–49: 10 mg/day. CrCl 5–29: 10 mg/day (5 mg twice daily).','Mild–moderate impairment: no adjustment. Severe: not studied.',
+ 'Not used in breastfeeding. The indication is in older adults.');
+
+/* ── antiepileptics ── */
+dgInfoRec('phenytoin',['Capsules 25, 50, 100, 300 mg','Chewable tablets 50 mg','Suspension 30 mg/5 mL','IV injection 250 mg/5 mL'],
+ ['Slow and variable. Formulations are not interchangeable (capsule vs suspension)','About 90% (albumin); the free fraction rises in low albumin or uraemia','Liver CYP2C9 (main) and CYP2C19. Saturable (zero-order) kinetics at therapeutic levels. Strong enzyme inducer','Urine as metabolites','3–12 h (slower with extended-release capsules)','About 22 h (7–42 h, dose-dependent)'],
+ 'No dose change, but protein binding falls in uraemia, so measure free phenytoin.','Reduce the dose and monitor free levels.',
+ 'Small amounts in milk. Compatible. Monitor the infant for sedation and poor feeding.');
+dgInfoRec('phenobarbital',['Tablets 15, 30, 60 mg','Elixir','Injection 200 mg/mL'],
+ ['About 90% orally','About 50%','Liver CYP2C19 and CYP2C9 (hydroxylation, glucuronidation). Strong enzyme inducer','Urine about 25% unchanged (more in alkaline urine)','About 1–6 h','About 53–118 h (mean about 79 h)'],
+ 'Reduce the dose and extend the interval in severe impairment.','Reduce the dose. Avoid in severe liver disease (may precipitate coma).',
+ 'Infant sedation and poor feeding. Avoid if possible. Monitor.');
+dgInfoRec('levetiracetam',['Tablets 250, 500, 750, 1,000 mg','Oral solution 100 mg/mL','IV infusion 500 mg/5 mL','Granules'],
+ ['Over 95%; food slows but does not reduce absorption','Under 10%','Hydrolysis of the acetamide group (not CYP); minimal','Urine about 66% unchanged','About 1 h','6–8 h (longer in the elderly and renal impairment)'],
+ 'CrCl 50–79: 500–1,000 mg twice daily. CrCl 30–49: 250–750 mg twice daily. CrCl below 30: 250–500 mg twice daily. Dialysis: 500–1,000 mg once daily.','Mild–moderate impairment: no adjustment. Severe impairment with CrCl below 70: reduce the maintenance dose by 50% (US).',
+ 'Moderate transfer into milk but low infant serum levels. Generally compatible. Monitor the infant.');
+dgInfoRec('topiramate',['Tablets 25, 50, 100, 200 mg','Sprinkle capsules 15, 25, 50 mg'],
+ ['About 80%; not affected by food','15–41%','Little (about 20%); induces CYP3A4 (dose-dependent) and inhibits CYP2C19','Urine about 70% unchanged','About 2 h','About 21 h'],
+ 'CrCl below 70: halve the dose.','Use caution. Clearance is reduced.',
+ 'Moderate transfer into milk. Monitor the infant for diarrhoea and drowsiness.');
+dgInfoRec('oxcarbazepine',['Tablets 150, 300, 600 mg','Suspension 60 mg/mL'],
+ ['Complete; not affected by food','About 40% (MHD)','Liver cytosolic reduction to MHD (active). Weak CYP3A4 inducer and CYP2C19 inhibitor','Urine about 95% as MHD and conjugates','About 4.5 h (MHD)','About 2 h parent; MHD about 9 h'],
+ 'CrCl below 30: halve the starting dose (300 mg/day) and titrate slowly.','Mild–moderate impairment: no adjustment. Severe: not studied.',
+ 'Low to moderate transfer into milk. Monitor the infant.');
+dgInfoRec('gabapentin',['Capsules 100, 300, 400 mg','Tablets 600 and 800 mg','Oral solution 250 mg/5 mL'],
+ ['Saturable absorption: bioavailability falls with dose (about 60% at 900 mg/day to about 33% at 3,600 mg/day)','Under 3%','Not metabolised','Urine, unchanged','2–3 h','5–7 h (much longer in renal impairment)'],
+ 'CrCl 30–59: 400–1,400 mg/day. CrCl 15–29: 200–700 mg/day. CrCl below 15: 100–300 mg/day.','No adjustment needed (not metabolised).',
+ 'Low relative infant dose (about 1–3%). Generally compatible. Monitor for sedation.');
+dgInfoRec('pregabalin',['Capsules 25, 50, 75, 100, 150, 200, 225, 300 mg','Oral solution 20 mg/mL'],
+ ['At least 90%; food slows the rate but not the extent','Not protein-bound','Negligible','Urine about 90% unchanged','About 1 h','About 6.3 h'],
+ 'CrCl 30–60: 75–300 mg/day. CrCl 15–30: 25–150 mg/day. CrCl below 15: 25–75 mg/day.','No adjustment needed (not metabolised).',
+ 'Limited data. Avoid, or monitor the infant.');
+dgInfoRec('ethosuximide',['Capsules 250 mg','Syrup 250 mg/5 mL'],
+ ['Almost complete orally','Negligible','Liver CYP3A4 (and CYP2E1) to inactive metabolites','Urine about 20% unchanged; the rest as metabolites','3–7 h','About 30 h in children; 50–60 h in adults'],
+ 'Use caution and monitor.','Use caution and reduce the dose.',
+ 'Present at about 90% of maternal levels. Monitor for sedation. Alternatives are preferred.');
+dgInfoRec('lacosamide',['Tablets 50, 100, 150, 200 mg','Syrup 10 mg/mL','IV infusion 200 mg/20 mL'],
+ ['About 100%; food does not affect it','Under 15%','Liver CYP2C19 (O-desmethyl metabolite is inactive)','Urine about 95% (about 40% unchanged)','1–4 h','About 13 h'],
+ 'Severe impairment (CrCl 30 or below): maximum 250 mg/day (300 mg in some references).','Mild–moderate impairment: maximum about 300 mg/day. Not recommended in severe impairment.',
+ 'Limited data. Avoid, or monitor the infant.');
+dgInfoRec('zonisamide',['Capsules 25, 50, 100 mg'],
+ ['Rapid; about 100% bioavailable','About 40–50%','Liver CYP3A4 (reduction) and acetylation','Urine about 62%, faeces about 3%','2–6 h','About 63 h (about 27 h with enzyme inducers)'],
+ 'Titrate more slowly. Not recommended if CrCl is below 20 mL/min (limited data).','Use caution and titrate more slowly. Not studied in severe impairment.',
+ 'Milk levels are similar to maternal levels. Avoid, or monitor the infant.');
+
+/* ── bladder, enuresis, laxatives ── */
+dgInfoRec('oxybutynin',['Tablets 2.5 and 5 mg','Extended-release tablets 5, 10, 15 mg','Oral liquid 2.5 mg/5 mL','Transdermal patch 3.9 mg/24 h'],
+ ['Rapid; bioavailability about 6% (first-pass), higher with the patch','Over 99%','Liver CYP3A4 to active N-desethyloxybutynin (causes dry mouth)','Urine as metabolites (under 0.1% unchanged)','About 1 h IR; 4–6 h ER','About 2–3 h IR; about 13 h ER'],
+ 'No adjustment is typical. Use caution.','Use caution (liver metabolism).',
+ 'May reduce milk supply. Limited data.');
+dgInfoRec('tolterodine',['Tablets 1 and 2 mg','Extended-release capsules 2 and 4 mg'],
+ ['Well absorbed; bioavailability 17–65% depending on CYP2D6 status','About 96%','Liver CYP2D6 to active 5-hydroxymethyl metabolite; CYP3A4 in poor metabolisers','Urine about 77%, faeces about 17%','1–2 h IR; about 4 h ER','About 2–3 h (about 10 h in poor metabolisers)'],
+ 'CrCl 10–30: 1 mg twice daily. Avoid below 10.','Liver impairment: 1 mg twice daily.',
+ 'No data. Avoid.');
+dgInfoRec('desmopressin',['Tablets 100 and 200 micrograms','Oral lyophilisate (melt) 60, 120, 240 micrograms','Nasal spray 10 micrograms/dose','Injection 4 micrograms/mL'],
+ ['Oral bioavailability only about 0.1%; sublingual melt about 0.25%; intranasal 3–10%','About 50%','Not well characterised; not CYP','Renal; about 50% unchanged','About 0.5–2 h','About 2–3 h (longer in renal impairment)'],
+ 'Contraindicated in moderate–severe renal impairment (CrCl below 50 mL/min).','Not studied. Use caution.',
+ 'Low levels expected. Considered acceptable.');
+dgInfoRec('peg3350',['Sachets 13.8 g (Movicol) or 17 g powder','Paediatric sachets 6.9 g'],
+ ['Not absorbed (osmotic action in the gut)','Not applicable','Not metabolised','Faeces (unabsorbed)','Onset of effect 24–48 h','Not applicable'],
+ 'No adjustment needed (not absorbed).','No adjustment needed.',
+ 'Not absorbed. Safe.');
+dgInfoRec('docusate',['Capsules 100 mg','Solution 12.5 mg/5 mL and 50 mg/5 mL','Enema'],
+ ['Minimal absorption','Not applicable','Little','Faeces; small amounts in bile','Onset 12–72 h orally','Not well defined'],
+ 'No adjustment needed.','No adjustment needed.',
+ 'Considered safe (not absorbed).');
+dgInfoRec('senna',['Tablets 7.5 mg','Syrup 7.5 mg/5 mL','(8.6 mg tablets in the US)'],
+ ['Poor absorption. Colonic bacteria convert it to the active rhein anthrone','Not applicable','Colonic bacteria; the small absorbed fraction is conjugated in the liver','Faeces; a small amount in urine (may colour urine)','Onset 6–12 h','Not applicable'],
+ 'Use caution. Prolonged use can cause electrolyte disturbance.','No adjustment needed.',
+ 'Minimal milk excretion. Short-term use is acceptable. May cause loose stools in the infant.');
+
+/* ═══ Standard-dose helpers, calculator and dose reference ═══ */
+function dgFmt(v){ return v<1?String(Number(v.toFixed(3))):(v<10?String(Number(v.toFixed(2))):String(Number(v.toFixed(1)))); }
+function dgKgText(z){
+  if(!z||!z.k) return 'Not weight-based';
+  var u=z.k[3]||(z.u+'/kg/day');
+  return (z.k[0]!=null?(z.k[0]+'–'+z.k[1]):('up to '+z.k[1]))+' '+u+(z.k[2]!=null?' (maximum '+z.k[2]+' '+u+')':'');
+}
+function dgDrugOptions(){
+  return Object.keys(DRUGS).sort(function(a,b){return DRUGS[a].n.localeCompare(DRUGS[b].n);}).map(function(id){
+    return '<option value="'+id+'">'+cxEsc(DRUGS[id].n)+'</option>';
+  }).join('');
+}
+function dgTile(l,v){ return '<div class="dg-tile"><div class="dg-tile-l">'+cxEsc(l)+'</div><div class="dg-tile-v">'+cxEsc(v)+'</div></div>'; }
+function dgStdSummary(id){
+  var z=DG_DOSE[id]; if(!z) return '';
+  return '<div class="dg-tiles">'+dgTile('Usual adult dose',z.a)+dgTile('Doses per day',z.f)+dgTile('Maximum per day',z.m)+dgTile('Weight-based dose',dgKgText(z))+'</div>'
+    +(z.kt?'<div class="dg-p dg-ktnote"><b>Children and weight-based dosing:</b> '+cxEsc(z.kt)+'</div>':'')
+    +'<button class="dg-btn" onclick="dgCalcFromDrug(\''+id+'\')">⚖️ Open in dose calculator</button>';
+}
+function dgCalcPick(){
+  var sel=document.getElementById('c1drug'); if(!sel) return;
+  var id=sel.value, std=document.getElementById('c1std'), z=id?DG_DOSE[id]:null, u=z?z.u:'mg';
+  var set=function(i,t){ var e=document.getElementById(i); if(e) e.textContent=t; };
+  set('c1dl','Dose ('+((z&&z.k&&z.k[3])||(u+'/kg/day'))+')'); set('c1ml','Max daily ('+u+', optional)');
+  var r=document.getElementById('c1r');
+  if(!z){
+    std.textContent='Choose a medicine to see its standard dose, usual doses per day and maximum daily dose. You can also enter your own numbers.';
+    document.getElementById('c1m').value=''; if(r) r.textContent='Enter weight and dose.'; return;
+  }
+  std.innerHTML='<b>'+cxEsc(DRUGS[id].n)+'</b><br>Usual adult dose: <b>'+cxEsc(z.a)+'</b><br>Doses per day: <b>'+cxEsc(z.f)+'</b><br>Maximum per day: <b>'+cxEsc(z.m)+'</b><br>Weight-based dose: <b>'+cxEsc(dgKgText(z))+'</b>'+(z.kt?'<br><span>'+cxEsc(z.kt)+'</span>':'');
+  var nm=/(\d+)/.exec(z.f); document.getElementById('c1n').value=(nm&&!/^(Not daily|Repeat|Patch)/i.test(z.f))?nm[1]:'1';
+  document.getElementById('c1m').value=(z.n!=null)?String(z.n):'';
+  document.getElementById('c1d').value=z.k?String(z.k[0]!=null?z.k[0]:z.k[1]):'';
+  if(r) r.textContent=z.k?'Enter the weight, then press Calculate. The dose box starts at the lower end of the standard range.':'No standard weight-based dose for this medicine. Enter weight and dose only if your protocol gives one.';
+}
+function dgCalc1(){
+  var sel=document.getElementById('c1drug'), id=sel?sel.value:'', z=id?DG_DOSE[id]:null;
+  var w=_n('c1w'), d=_n('c1d'), n=_n('c1n')||1, m=_n('c1m'), r=document.getElementById('c1r');
+  if(!(w>0&&d>0)){ r.textContent='Enter weight and dose.'; return; }
+  var u=z?z.u:'mg', ku=(z&&z.k&&z.k[3])||(u+'/kg/day');
+  var tot=w*d, cap=null, why='';
+  if(m>0){ cap=m; why='the maximum you entered'; }
+  if(z){
+    var child=w<50, nmax=(child&&z.np!=null)?z.np:z.n;
+    if(nmax!=null && (cap==null||nmax<cap)){ cap=nmax; why=(child&&z.np!=null)?'paediatric maximum, applied under 50 kg':'standard maximum for this medicine'; }
+    if(z.k && z.k[2]!=null){ var kc=z.k[2]*w; if(cap==null||kc<cap){ cap=kc; why='maximum of '+z.k[2]+' '+ku; } }
+  }
+  var capped=(cap!=null && tot>cap); if(capped) tot=cap;
+  var html='Total: <b>'+dgFmt(tot)+' '+u+'/day</b>'+(capped?' <span style="color:#ea580c">(capped at '+dgFmt(cap)+' '+u+'/day: '+why+')</span>':'')+'<br>Per dose ('+n+'×/day): <b>'+dgFmt(tot/n)+' '+u+'</b>';
+  if(z){
+    if(z.k){
+      var lo=z.k[0], hi=z.k[1];
+      html+='<br>Standard range: <b>'+cxEsc(dgKgText(z))+'</b>';
+      if(d>hi) html+='<br><b style="color:#dc2626">The dose you entered is above the standard range. Check the order.</b>';
+      else if(lo!=null&&d<lo) html+='<br>The dose you entered is below the standard range (it may be a starting dose).';
+      else html+='<br>The dose you entered is within the standard range.';
+    } else html+='<br>No standard weight-based dose for this medicine. Usual adult dose: <b>'+cxEsc(z.a)+'</b>';
+    html+='<br>Maximum per day: <b>'+cxEsc(z.m)+'</b><br>Usual doses per day: <b>'+cxEsc(z.f)+'</b>';
+    if(z.kt) html+='<br><span style="font-weight:500">'+cxEsc(z.kt)+'</span>';
+  }
+  r.innerHTML=html;
+}
+function dgDoseRefHTML(q){
+  q=String(q||'').toLowerCase().trim();
+  var ids=Object.keys(DRUGS).filter(function(id){
+    var d=DRUGS[id], hay=(d.n+' '+d.cl+' '+(d.px&&d.px.trade?d.px.trade:'')).toLowerCase();
+    return !q||hay.indexOf(q)>=0;
+  }).sort(function(a,b){return DRUGS[a].n.localeCompare(DRUGS[b].n);});
+  if(!ids.length) return '<div class="dg-p">No medicine matches your search.</div>';
+  return '<div class="dg-p" style="font-size:.7rem;margin-bottom:6px">'+ids.length+' medicine'+(ids.length===1?'':'s')+'</div>'+ids.map(function(id){
+    var z=DG_DOSE[id], d=DRUGS[id]; if(!z) return '';
+    return '<div class="dg-dr"><div class="dg-dr-h"><b>'+cxEsc(d.n)+'</b><small>'+cxEsc(d.cl)+'</small></div>'
+     +'<div class="dg-dr-g"><div><span>Usual adult dose</span>'+cxEsc(z.a)+'</div><div><span>Doses per day</span>'+cxEsc(z.f)+'</div><div><span>Maximum per day</span>'+cxEsc(z.m)+'</div><div><span>Weight-based dose</span>'+cxEsc(dgKgText(z))+'</div></div>'
+     +'<div class="dg-dr-b"><button class="dg-btn-s" onclick="dgOpenCalcFor(\''+id+'\')">⚖️ Calculate</button><button class="dg-btn-s" onclick="mcOpenDrug(\''+id+'\')">Open guide</button></div></div>';
+  }).join('');
+}
+function dgDoseRefFilter(){
+  var q=document.getElementById('drQ'), l=document.getElementById('drList');
+  if(l) l.innerHTML=dgDoseRefHTML(q?q.value:'');
+}
+function dgOpenCalcFor(id){
+  var s=document.getElementById('c1drug'); if(!s) return;
+  s.value=id; dgCalcPick();
+  var o=document.getElementById('mcDrugOverlay'); if(o) o.scrollTop=0;
+  var w=document.getElementById('c1w'); if(w&&w.focus){ try{ w.focus(); }catch(e){} }
+}
+function dgCalcFromDrug(id){
+  dgSetTab('calc');
+  setTimeout(function(){ dgOpenCalcFor(id); },0);
+}
+
 /* ══ Medscape-style drug monograph (v9) ══ */
 const DG_PANES = [['dose','Dosing &amp; Uses'],['ae','Adverse Effects'],['ix','Interactions'],['warn','Warnings'],['pharm','Pharmacology'],['edu','Nursing &amp; Patient']];
 const DG_SEV = [
@@ -26282,6 +27134,7 @@ function dgDrugHTML(id){
   var sec=function(ic,t,html){ return '<div class="dg-sec"><span>'+ic+'</span>'+t+'</div>'+html; };
   var pane=function(k,html){ return '<div class="dg-pane" data-p="'+k+'"'+(DG.pane===k?'':' style="display:none"')+'>'+html+'</div>'; };
   var conds=dgConditionsFor(id);
+  var di=(typeof dgInfoFor==='function')?dgInfoFor(id):null;
 
   /* hero */
   var hero='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div style="min-width:0"><div class="dg-h1">'+cxEsc(d.n)+'</div>'
@@ -26295,9 +27148,14 @@ function dgDrugHTML(id){
   var firstOpen=accs.length?accs[0][1]:'';
   var dose=sec('🎯','Indicated for','<div class="cx-box"><div class="dg-p" style="color:var(--text)">'+cxEsc(d.use)+'</div></div>')
     +(p&&p.uses&&p.uses.length?'<div class="dg-sub">FDA-approved uses</div>'+'<div class="dg-tags">'+p.uses.map(function(u){return '<span class="dg-tag">'+cxEsc(u)+'</span>';}).join('')+'</div>':'')
+    +sec('📊','Standard dosing',dgStdSummary(id))
     +sec('📏','Dosing',accs.map(function(a){ return dgAcc(a[0],G[a[1]].length,dgRegHTML(G[a[1]]),a[1]===firstOpen); }).join('')
       +(p&&p.usdose?dgAcc('US-label dosing',null,cxSplit(p.usdose).map(function(x){return '<div class="dg-reg"><div class="dg-reg-t">'+cxEsc(x)+'</div></div>';}).join('')+'<div class="cx-warn">Main doses above follow UK/WHO-style references. US labelling can differ in start and maximum doses — follow your local protocol.</div>',false):''))
     +sec('🧮','Dose calculation / titration','<div class="cx-box"><div class="dg-p" style="color:var(--text)">'+cxEsc(d.calc)+'</div></div>')
+    +(di?sec('🧩','Dose adjustments &amp; practical details',
+        dgAcc('Renal &amp; hepatic impairment',null,'<div class="dg-reg"><div class="dg-reg-l">Renal impairment</div><div class="dg-reg-t">'+cxEsc(di.renal)+'</div></div><div class="dg-reg"><div class="dg-reg-l">Hepatic impairment</div><div class="dg-reg-t">'+cxEsc(di.hepatic)+'</div></div>',false)
+       +dgAcc('Stopping the drug &amp; missed doses',null,'<div class="dg-reg"><div class="dg-reg-l">Stopping the drug</div><div class="dg-reg-t">'+cxEsc(di.stop)+'</div></div><div class="dg-reg"><div class="dg-reg-l">If a dose is missed</div><div class="dg-reg-t">'+cxEsc(di.missed)+'</div></div>',false)
+       +dgAcc('Formulations &amp; strengths',di.form.length,di.form.map(function(f){return '<div class="dg-reg"><div class="dg-reg-t">'+cxEsc(f)+'</div></div>';}).join(''),false)):'')
     +sec('💉','Administration','<div class="cx-box cx-do">'+cxList(d.adm)+'</div>')
     +sec('📈','Monitoring','<div class="dg-p">'+cxEsc(d.mon)+'</div>')
     +(conds.length?sec('📚','Conditions in this app that use it','<div class="dg-chips">'+conds.map(function(c){return '<button class="dg-chip" onclick="dgGoCondition(\''+c.id+'\')">'+cxEsc(c.name)+'</button>';}).join('')+'</div>'):'');
@@ -26317,11 +27175,13 @@ function dgDrugHTML(id){
     +(p&&p.high?'<div class="cx-warn" style="border-left:4px solid #ef4444;margin:10px 0"><b>⚠ High-alert medication</b> — carries a significant risk of harm if used in error; needs enhanced oversight and monitoring.</div>':'')
     +sec('⛔','Contraindications','<div class="dg-p">'+cxEsc(d.ci)+'</div>'+(p&&p.ci&&p.ci.length?'<div class="cx-box cx-dont" style="margin-top:8px"><div class="cx-box-t">Listed contraindications and cautions</div>'+cxList(p.ci)+'</div>':''))
     +sec('✖','Cautions — do not','<div class="cx-box cx-dont">'+cxList(d.dnt)+'</div>')
-    +sec('🤰','Pregnancy &amp; lactation','<div class="dg-p">'+cxEsc(d.preg)+'</div>')
+    +sec('🤰','Pregnancy','<div class="dg-p">'+cxEsc(d.preg)+'</div>')
+    +(di?sec('🤱','Breastfeeding (lactation)','<div class="dg-p">'+cxEsc(di.lact)+'</div>'):'')
     +sec('🚑','Overdose / antidote','<div class="cx-box cx-flag"><div class="dg-p" style="color:var(--text)">'+cxEsc(d.od)+'</div></div>');
 
   /* PHARMACOLOGY */
-  var pk=p?'<table class="dg-tbl dg-pk"><tr><td>Half-life</td><td>'+cxEsc(p.t12)+'</td></tr><tr><td>Onset</td><td>'+cxEsc(p.onset)+'</td></tr>'+(p.lab?'<tr><td>Reference range</td><td>'+cxEsc(p.lab)+'</td></tr>':'')+'</table>':'';
+  var pkRows=di?[['Absorption',di.pk.abs],['Peak level',di.pk.tmax],['Protein binding',di.pk.bind],['Metabolism',di.pk.met],['Elimination',di.pk.elim],['Half-life',(p&&p.t12)||di.pk.t12],['Onset of action',p&&p.onset],['Reference range',p&&p.lab]]:(p?[['Half-life',p.t12],['Onset of action',p.onset],['Reference range',p.lab]]:[]);
+  var pk=pkRows.filter(function(r){return r[1];}).length?'<div style="overflow-x:auto"><table class="dg-tbl dg-pk">'+pkRows.filter(function(r){return r[1];}).map(function(r){return '<tr><td>'+r[0]+'</td><td>'+cxEsc(r[1])+'</td></tr>';}).join('')+'</table></div>':'';
   var pharm=sec('🧬','Class','<div class="dg-p" style="color:var(--text)">'+cxEsc(d.cl)+(p&&p.cls&&p.cls!==d.cl?' · '+cxEsc(p.cls):'')+'</div>')
     +(p?sec('⚙️','Mechanism of action','<div class="cx-box"><div class="dg-p" style="color:var(--text)">'+cxEsc(p.moa)+'</div></div>')
       +sec('✅','Therapeutic effect','<div class="dg-p">'+cxEsc(p.thera)+'</div>')
@@ -26330,6 +27190,7 @@ function dgDrugHTML(id){
 
   /* NURSING & PATIENT */
   var edu=sec('🩺','Nursing management','<div class="cx-box cx-nurse">'+cxList(d.nurs)+'</div>')
+    +(di&&di.counsel.length?sec('🗣️','Patient counselling (patient handout)','<div class="cx-box cx-do">'+cxList(di.counsel)+'</div>'):'')
     +sec('👁️','Teach the patient and family to report','<div class="cx-box cx-flag"><div class="dg-p" style="color:var(--text)">'+cxEsc(d.warn)+'</div></div>');
 
   return hero
@@ -27687,7 +28548,7 @@ function dgPaneText(startEl){
     if(h) parts.push(h.textContent.trim());
     if(tab) parts.push(tab[1].replace(/&amp;/g,'and'));
   }
-  pane.querySelectorAll('.dg-sec,.dg-p,.cx-li,.cx-box-t,.dg-reg-l,.dg-reg-t,.dg-tag,.dg-bbw-h,.dg-sevh,.dg-ixc-a,.dg-ixc-e,.dg-ixc-m,.dg-tbl td').forEach(function(e){
+  pane.querySelectorAll('.dg-sec,.dg-p,.cx-li,.cx-box-t,.dg-reg-l,.dg-reg-t,.dg-tag,.dg-bbw-h,.dg-sevh,.dg-ixc-a,.dg-ixc-e,.dg-ixc-m,.dg-tbl td,.dg-tile-l,.dg-tile-v').forEach(function(e){
     if(!started){
       if(e===startEl || (startEl.compareDocumentPosition(e)&4)) started=true; else return;
     }
@@ -27711,7 +28572,7 @@ function dgListen(force,startEl){
 
 /* ── Tap anywhere to read from there (conditions, tools, interview, exams, screening, drug guide) ── */
 const MC_HEAD_SEL='.detail-section-title,.dg-sec,.int-section-title,.int-guidance-title,.int-summary-section-title,.ca-summary-section-title,.cx-box-t,.tool-hero-name,.scr-h,.scr-h2';
-const MC_UNIT_SEL=MC_HEAD_SEL+',p,li,tr,.kf-item,.ov-card,.detail-prose,.domain-card,.glossary-def,.int-guidance-body,.int-section-desc,.dg-reg,.dg-ixc,.dg-p,.cx-li,.scr-q,.scr-lead,.scr-when,.scr-row,.scr-impact,.scr-sum-row';
+const MC_UNIT_SEL=MC_HEAD_SEL+',p,li,tr,.kf-item,.ov-card,.detail-prose,.domain-card,.glossary-def,.int-guidance-body,.int-section-desc,.dg-reg,.dg-ixc,.dg-tile,.dg-dr,.dg-p,.cx-li,.scr-q,.scr-lead,.scr-when,.scr-row,.scr-impact,.scr-sum-row';
 const MC_NOJUMP_SEL='a,button,input,textarea,select,label,summary,[onclick],.term-pill-inline,.tool-tag,.mc-spk-btn,.mc-tts-skip,#mcPlayer,.dg-chip,.dg-badge,.dg-tab';
 const MC_INLINE_RE=/^(SPAN|A|B|I|EM|STRONG|SMALL|SUP|SUB|CODE|MARK|U|BR)$/;
 function mcTapOn(){ return mcSafeGet('mc_tap_read','1')!=='0'; }
@@ -27853,9 +28714,14 @@ const CPZ = {chlorpromazine:100,haloperidol:2,risperidone:2,olanzapine:5,quetiap
 function dgRenderCalc(){
   const b = document.getElementById('dgBody');
   b.innerHTML = `
-  <div class="dg-calc"><h4>⚖️ Weight-based dose (mg/kg)</h4>
-    <div class="dg-row"><label>Weight (kg)<input id="c1w" type="number" inputmode="decimal"></label><label>Dose (mg/kg/day)<input id="c1d" type="number" inputmode="decimal"></label><label>Doses per day<input id="c1n" type="number" value="2" inputmode="numeric"></label><label>Max daily (mg, optional)<input id="c1m" type="number" inputmode="decimal"></label></div>
-    <button class="dg-btn" onclick="dgCalc1()">Calculate</button><div class="dg-res" id="c1r"></div></div>
+  <div class="dg-calc"><h4>⚖️ Weight-based dose (mg/kg/day)</h4>
+    <div class="dg-row"><label>Medicine (optional)<select id="c1drug" onchange="dgCalcPick()"><option value="">Choose a medicine…</option>${dgDrugOptions()}</select></label></div>
+    <div id="c1std" class="dg-std">Choose a medicine to see its standard dose, usual doses per day and maximum daily dose. You can also enter your own numbers.</div>
+    <div class="dg-row"><label><span id="c1wl">Weight (kg)</span><input id="c1w" type="number" inputmode="decimal"></label><label><span id="c1dl">Dose (mg/kg/day)</span><input id="c1d" type="number" inputmode="decimal"></label><label>Doses per day<input id="c1n" type="number" value="2" inputmode="numeric"></label><label><span id="c1ml">Max daily (mg, optional)</span><input id="c1m" type="number" inputmode="decimal"></label></div>
+    <button class="dg-btn" onclick="dgCalc1()">Calculate</button><div class="dg-res" id="c1r">Enter weight and dose.</div></div>
+  <div class="dg-calc"><h4>📋 Dose reference: all medicines</h4>
+    <div class="dg-row"><label>Search<input id="drQ" type="search" placeholder="Drug, brand or class" oninput="dgDoseRefFilter()"></label></div>
+    <div id="drList">${dgDoseRefHTML('')}</div></div>
   <div class="dg-calc"><h4>💉 Volume to draw (injection / syrup)</h4>
     <div class="dg-row"><label>Ordered dose (mg)<input id="c2d" type="number" inputmode="decimal"></label><label>Strength (mg)<input id="c2s" type="number" inputmode="decimal"></label><label>…per (mL)<input id="c2v" type="number" value="1" inputmode="decimal"></label></div>
     <button class="dg-btn" onclick="dgCalc2()">Calculate</button><div class="dg-res" id="c2r"></div>
@@ -27879,10 +28745,6 @@ function dgRenderCalc(){
   <div class="dg-disc">${cxEsc(CX_DISCLAIMER)} Always double-check calculations with a second nurse/pharmacist for high-risk drugs.</div>`;
 }
 function _n(id){return parseFloat(document.getElementById(id).value);}
-function dgCalc1(){const w=_n('c1w'),d=_n('c1d'),n=_n('c1n')||1,m=_n('c1m');const r=document.getElementById('c1r');
-  if(!(w>0&&d>0)){r.textContent='Enter weight and dose.';return;}
-  let tot=w*d, note=''; if(m>0&&tot>m){tot=m;note=' (capped at the maximum daily dose)';}
-  r.innerHTML=`Total: <b>${tot.toFixed(1)} mg/day</b>${note}<br>Per dose (${n}×/day): <b>${(tot/n).toFixed(1)} mg</b>`;}
 function dgCalc2(){const d=_n('c2d'),s=_n('c2s'),v=_n('c2v')||1;const r=document.getElementById('c2r');
   if(!(d>0&&s>0)){r.textContent='Enter dose and strength.';return;}
   r.innerHTML=`Draw up <b>${(d/s*v).toFixed(2)} mL</b>`;}
